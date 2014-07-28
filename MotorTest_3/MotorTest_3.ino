@@ -4,10 +4,16 @@
 #define pinMotorDirectionB 13
 #define pinMotorPowerA 3
 #define pinMotorPowerB 11
+#define forwardButton 4
+#define backwardButton 2
 
 int stepsPerRotation = 200.0;
-int rpm = 150.0;
+int rpm = 90.0;
 int delayLength = int (1000.0 / (stepsPerRotation * rpm / 60.0));
+int forwardButtonState;
+int backwardButtonState;
+
+#define DEBOUNCE 10  // button debouncer, how many ms to debounce, 5+ ms is usually plenty
 
 void setup() {
   Serial.begin(9600);
@@ -22,16 +28,45 @@ void setup() {
   //establish motor brake pins
   pinMode(pinMotorEnableA, OUTPUT); //brake (disable) CH A
   pinMode(pinMotorEnableB, OUTPUT); //brake (disable) CH B
+  
+    //establish button pins
+  pinMode(forwardButton, INPUT);
+  pinMode(backwardButton, INPUT);
+
+  forwardButtonState = digitalRead(forwardButton);
+  backwardButtonState = digitalRead(backwardButton);
 }
 
-void loop(){
-  for (int i = 0; i < 10; i += 1) {
-    moveForwardOneRotation();
+void loop() {
+  int fVal, fVal2, bVal, bVal2;
+  
+  fVal = digitalRead(forwardButton);
+  bVal = digitalRead(backwardButton);
+  delay(DEBOUNCE);
+  fVal2 = digitalRead(forwardButton);
+  bVal2 = digitalRead(backwardButton);
+  
+  if (fVal == fVal2) {
+    if (fVal != forwardButtonState) {
+      if (fVal == HIGH) {
+        moveForwardOneRotation();
+      }
+      else {
+        forwardButtonState = fVal;
+      }
+    }
   }
-  for (int i = 0; i < 10; i += 1) {
-    moveBackwardOneRotation();
+  
+  if (bVal == bVal2) {
+    if (bVal != backwardButtonState) {
+      if (bVal == HIGH) {
+        moveBackwardOneRotation();
+      }
+      else {
+        backwardButtonState = bVal;
+      }
+    }
   }
-  while(true);
 }
 
 void moveForwardOneRotation() {
@@ -39,6 +74,7 @@ void moveForwardOneRotation() {
   for (int i = 0; i < stepsPerRotation; i += 1) {
     moveForwardOneStep(i % 4);
   }
+  forwardButtonState = LOW;
 }
 
 void moveBackwardOneRotation() {
@@ -46,6 +82,7 @@ void moveBackwardOneRotation() {
   for (int i = 0; i < stepsPerRotation; i += 1) {
     moveBackwardOneStep(i % 4);
   }
+  backwardButtonState = LOW;
 }
 
 void moveForwardOneStep(int mode) {
