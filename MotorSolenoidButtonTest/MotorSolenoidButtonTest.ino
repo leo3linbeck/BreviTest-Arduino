@@ -7,13 +7,17 @@
 #define forwardButton 4
 #define backwardButton 2
 #define solenoidPin 6
-#define thrustsPerRotation 4
+#define shiftsPerRotation 8
 
 int stepsPerRotation = 200.0;
-int rpm = 90.0;
+int rpm = 30.0;
 int delayLength = int (1000.0 / (stepsPerRotation * rpm / 60.0));
+int stepsPerShift = stepsPerRotation / shiftsPerRotation;
 int forwardButtonState;
 int backwardButtonState;
+boolean frontLimitSwitchOK = true;
+boolean backLimitSwitchOK = true;
+boolean shiftOn = true;
 
 #define DEBOUNCE 10  // button debouncer, how many ms to debounce, 5+ ms is usually plenty
 
@@ -74,32 +78,45 @@ void loop() {
   }
 }
 
-void moveForwardOneRotation() {
-  int solenoidState;
-  
-  Serial.println("Forward one rotation...");
-  for (int i = 0; i < stepsPerRotation; i += 1) {
-    moveForwardOneStep(i % 4);
-    if ((i % (thrustsPerRotation/2)) == 0) {
-      solenoidState = digitalRead(solenoidPin);
-      if (solenoidState == HIGH) {
-        digitalWrite(solenoidPin, LOW);
-      }
-      else {
-        digitalWrite(solenoidPin, HIGH);
-      }
+void processShift(int i) {
+  if ((i % stepsPerShift) == 0) {
+    if ((i % 2) == 0) {
+      Serial.println("Shifting in...");
+      digitalWrite(solenoidPin, HIGH);
+    }
+    else {
+      Serial.println("Shifting out...");
+      digitalWrite(solenoidPin, LOW);
     }
   }
-  forwardButtonState = LOW;
-  digitalWrite(solenoidPin, LOW);
+}
+
+void moveForwardOneRotation() {
+  if (frontLimitSwitchOK) {
+    Serial.println("Forward one rotation...");
+    for (int i = 0; i < stepsPerRotation; i += 1) {
+      moveForwardOneStep(i % 4);
+      processShift(i);
+    }
+    forwardButtonState = LOW;
+    digitalWrite(solenoidPin, LOW);
+  }
+  else {
+    Serial.println("Front limit switch on!");
+  }
 }
 
 void moveBackwardOneRotation() {
-  Serial.println("Backward one rotation...");
-  for (int i = 0; i < stepsPerRotation; i += 1) {
-    moveBackwardOneStep(i % 4);
+  if (backLimitSwitchOK) {
+    Serial.println("Backward one rotation...");
+    for (int i = 0; i < stepsPerRotation; i += 1) {
+      moveBackwardOneStep(i % 4);
+    }
+    backwardButtonState = LOW;
   }
-  backwardButtonState = LOW;
+  else {
+    Serial.println("Back limit switch on!");
+  }
 }
 
 void moveForwardOneStep(int mode) {

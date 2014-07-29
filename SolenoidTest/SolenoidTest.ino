@@ -1,4 +1,4 @@
-#define signalPin 3
+#define signalPin 6
 
 void setup() {
   pinMode(signalPin, OUTPUT);
@@ -7,9 +7,9 @@ void setup() {
 
 void loop() {
   for (int i = 0; i < 5; i += 1) {
-    delay(200);
-    analogWrite(signalPin, HIGH);
-    delay(200);
+    delay(400);
+    digitalWrite(signalPin, HIGH);
+    delay(400);
     digitalWrite(signalPin, LOW);
   }
   while(true);
