@@ -1,4 +1,5 @@
-#define pinBackLimitSwitch 22
+#define pinFrontLimitSwitch 12
+#define pinBackLimitSwitch 11
 
 void setup() {
   int initialState;
@@ -13,9 +14,13 @@ void setup() {
 }
 
 void loop() {
-  int pinState = digitalRead(pinBackLimitSwitch);
+  int pinState = digitalRead(pinFrontLimitSwitch);
   if (pinState == HIGH) {
-    Serial.println("Limit switch tripped.");
+    Serial.println("Front limit switch tripped.");
+  }
+  pinState = digitalRead(pinBackLimitSwitch);
+  if (pinState == HIGH) {
+    Serial.println("Back limit switch tripped.");
   }
   delay(10); 
 }

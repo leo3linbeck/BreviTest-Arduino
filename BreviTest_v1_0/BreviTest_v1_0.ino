@@ -1,21 +1,30 @@
-#include <AFMotor.h>
+#include <Wire.h>
+#include <Adafruit_MotorShield.h>
+#include "utility/Adafruit_PWMServoDriver.h"
+#include <LiquidCrystal.h>
 
 #define channelMotor 1
-#define channelSolenoid 2
+#define channelSolenoid 3
 
-#define pinFrontLimitSwitch 5
-#define pinBackLimitSwitch 7
+#define pinFrontLimitSwitch 12
+#define pinBackLimitSwitch 11
 
-#define pinButtonRun 2
-#define pinButtonLight 4
+#define pinButtonPowerLight 10
+#define pinButtonRun 7
+#define pinButtonRunLight 8
 #define pinAssaySensor A0
 #define pinControlSensor A1
+
+// NOTE: FORWARD and BACKWARD are reversed for the stepper motor!!!
+
+#define STEP_FORWARD BACKWARD
+#define STEP_BACKWARD FORWARD
 
 #define mmPerRotation 1.0
 #define solenoidDelay 500
 #define mmPerRaster 0.5
-#define stepsPerRotation 200.0
-#define rpm 100.0
+#define stepsPerRotation 200
+#define rpm 200
 
 #define number_of_wells 6   // does not include analyte and color wells
 #define number_of_sensor_readings 10
@@ -34,43 +43,39 @@ int solenoidDelayAfterRaster = int(round(solenoidDelay - secsPerRaster * 1000.0)
 
 int stateButtonRun;
 
-AF_Stepper motor(stepsPerRotation, channelMotor);
-AF_DCMotor solenoid(channelSolenoid, MOTOR12_8KHZ);
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+Adafruit_StepperMotor *motor = AFMS.getStepper(stepsPerRotation, channelMotor);
+Adafruit_DCMotor *solenoid = AFMS.getMotor(channelSolenoid);
 
 void setup() {
-  Serial.begin(9600);
-  
-    // set up stepping motor
-  Serial.println("Initializing motor and solenoid");
-  motor.setSpeed(rpm);
-  solenoid.setSpeed(255);
-  
     // initialize pins
-  Serial.println("Initializing pins");
   pinMode(pinFrontLimitSwitch, INPUT);
   pinMode(pinBackLimitSwitch, INPUT);
   pinMode(pinAssaySensor, INPUT);
   pinMode(pinControlSensor, INPUT);
   pinMode(pinButtonRun, INPUT);
   
-  pinMode(pinButtonLight, OUTPUT);
-  pinMode(pinSolenoid, OUTPUT);
+  pinMode(pinButtonRunLight, OUTPUT);  
+  pinMode(pinButtonPowerLight, OUTPUT);
   
-  stateButtonRun = digitalRead(pinButtonRun);
-  digitalWrite(pinButtonLight, LOW);
-
-    // initialize analyzer
-  Serial.println("Initializing analyzer");
-  solenoid_out();
+  digitalWrite(pinButtonRunLight, LOW);
+  digitalWrite(pinButtonPowerLight, HIGH);
+  
+  Serial.begin(9600);
+  
+    // set up stepping motor
+  Serial.println("Initializing shield, motor and solenoid");
+  AFMS.begin();
+  motor->setSpeed(rpm);
+  solenoid->setSpeed(184);
+  
   reset_x_stage();
 }
 
 void reset_x_stage() {
   Serial.println("Resetting X stage");
-  while(digitalRead(pinBackLimitSwitch) == LOW) {
-    motor.step(1, BACKWARD, DOUBLE);
-  }
-  motor.release();
+  move_steps(30000, STEP_BACKWARD, SINGLE);
+  motor->release();
   delay(1000);
 }
 
@@ -80,16 +85,17 @@ void loop() {
   rVal = digitalRead(pinButtonRun);
   delay(DEBOUNCE);
   rVal2 = digitalRead(pinButtonRun);
-  
   if (rVal == rVal2) {
     if (rVal != stateButtonRun) {
+      Serial.print("rval = ");
+      Serial.print(rVal);
+      Serial.print(", stateButtonRun = ");
+      Serial.println(stateButtonRun);
       if (rVal == HIGH) {
-        Serial.println("Run button pushed");
+        Serial.println("Running test");
         brevitest_run();
       }
-      else {
-        stateButtonRun = rVal;
-      }
+      stateButtonRun = LOW;
     }
   }
 }
@@ -97,8 +103,9 @@ void loop() {
 void brevitest_run() {
   bt_setup();
 
+  bt_move_to_first_well();
   bt_raster_first_well();
-  bt_move_to_next_well();
+  bt_move_to_previous_well();
   
   for (int i = 0; i < number_of_wells; i += 1) {
     bt_raster_well();
@@ -113,32 +120,31 @@ void brevitest_run() {
 }
 
 void bt_setup() {
+  digitalWrite(pinButtonRunLight, HIGH);
   reset_x_stage();
-  bt_move_to_first_well();
-  digitalWrite(pinButtonLight, HIGH);
 }
 
 void bt_move_to_first_well() {
   double mm = 4.0;
   int steps = int(round(mm / mmPerStep));
-  motor.step(steps, FORWARD, DOUBLE);
+  move_steps(steps, STEP_FORWARD, SINGLE);
 }
 
 void solenoid_out() {
     Serial.println("Shifting out...");
-    solenoid.run(RELEASE);
+    solenoid->run(RELEASE);
 }
 
 void solenoid_in() {
     Serial.println("Shifting in...");
-    solenoid.run(FORWARD);
+    solenoid->run(FORWARD);
 }
 
 void raster_well(double mm) {
   int number_of_rasters = int(round(mm / mmPerRaster));
   
   for (int i = 0; i < number_of_rasters; i += 1) {
-    motor.step(stepsPerRaster, FORWARD, SINGLE);
+    move_steps(stepsPerRaster, STEP_FORWARD, SINGLE);
     delay(solenoidDelayAfterRaster);
     solenoid_in();
     delay(solenoidDelay);
@@ -146,13 +152,32 @@ void raster_well(double mm) {
   }
 }
 
+void move_steps(int steps, int dir, int rate) {
+  Serial.print("Moving ");
+  Serial.print(steps);
+  Serial.println(" steps");
+  for (int i = 0; i < steps; i += 1) {
+    if (dir == STEP_FORWARD && digitalRead(pinFrontLimitSwitch) == HIGH) {
+      Serial.println("Front limit switch tripped");
+      return;
+    }
+    if (dir == STEP_BACKWARD && digitalRead(pinBackLimitSwitch) == HIGH) {
+      Serial.println("Back limit switch tripped");
+      return;
+    }
+    motor->step(1, dir, rate);
+  }
+}
+
 void move_mm(double mm) {
   int steps = int(round(abs(mm) / mmPerStep));
+  Serial.print("Steps: ");
+  Serial.println(steps);
   if (mm > 0) {
-    motor.step(steps, FORWARD, SINGLE);
+    move_steps(steps, STEP_FORWARD, SINGLE);
   }
   else {
-    motor.step(steps, BACKWARD, SINGLE);
+    move_steps(steps, STEP_BACKWARD, SINGLE);
   }
 }
 
@@ -162,6 +187,10 @@ void bt_raster_first_well() {
 
 void bt_move_to_next_well() {
   move_mm(4.0);
+}
+
+void bt_move_to_previous_well() {
+  move_mm(-8.0);
 }
 
 void bt_raster_well() {
@@ -194,6 +223,6 @@ void bt_read_sensors() {
 
 void bt_cleanup() {
   solenoid_out();
-  motor.release();
-  digitalWrite(pinButtonLight, LOW);
+  motor->release();
+  digitalWrite(pinButtonRunLight, LOW);
 }
