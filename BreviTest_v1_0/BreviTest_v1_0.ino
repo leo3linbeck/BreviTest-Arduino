@@ -6,12 +6,12 @@
 #define channelMotor 1
 #define channelSolenoid 3
 
-#define pinFrontLimitSwitch 12
-#define pinBackLimitSwitch 11
+#define pinFrontLimitSwitch 11
+#define pinBackLimitSwitch 12
 
-#define pinButtonPowerLight 10
-#define pinButtonRun 7
-#define pinButtonRunLight 8
+#define pinButtonPowerLight 3
+#define pinButtonRun 13
+#define pinButtonRunLight 4
 #define pinAssaySensor A0
 #define pinControlSensor A1
 
@@ -26,11 +26,13 @@
 #define stepsPerRotation 200
 #define rpm 200
 
-#define number_of_wells 6   // does not include analyte and color wells
+#define number_of_wells 5   // does not include analyte, antibody, and color wells
 #define number_of_sensor_readings 10
 #define delay_between_sensor_readings 500
 
 #define DEBOUNCE 10  // button debouncer, how many ms to debounce, 5+ ms is usually plenty
+
+#define solenoid_power 180
 
 double rps = rpm / 60.0;
 double mmPerSec = mmPerRotation * rps;
@@ -53,7 +55,7 @@ void setup() {
   pinMode(pinBackLimitSwitch, INPUT);
   pinMode(pinAssaySensor, INPUT);
   pinMode(pinControlSensor, INPUT);
-  pinMode(pinButtonRun, INPUT);
+  pinMode(pinButtonRun, INPUT_PULLUP);
   
   pinMode(pinButtonRunLight, OUTPUT);  
   pinMode(pinButtonPowerLight, OUTPUT);
@@ -67,14 +69,14 @@ void setup() {
   Serial.println("Initializing shield, motor and solenoid");
   AFMS.begin();
   motor->setSpeed(rpm);
-  solenoid->setSpeed(184);
+  solenoid->setSpeed(solenoid_power);
   
   reset_x_stage();
 }
 
 void reset_x_stage() {
   Serial.println("Resetting X stage");
-  move_steps(30000, STEP_BACKWARD, SINGLE);
+  move_steps(30000, STEP_BACKWARD, DOUBLE);
   motor->release();
   delay(1000);
 }
@@ -86,16 +88,16 @@ void loop() {
   delay(DEBOUNCE);
   rVal2 = digitalRead(pinButtonRun);
   if (rVal == rVal2) {
+    Serial.print("rval = ");
+    Serial.print(rVal);
+    Serial.print(", stateButtonRun = ");
+    Serial.println(stateButtonRun);
     if (rVal != stateButtonRun) {
-      Serial.print("rval = ");
-      Serial.print(rVal);
-      Serial.print(", stateButtonRun = ");
-      Serial.println(stateButtonRun);
-      if (rVal == HIGH) {
+      if (rVal == LOW) {
         Serial.println("Running test");
         brevitest_run();
       }
-      stateButtonRun = LOW;
+      stateButtonRun = HIGH;
     }
   }
 }
@@ -103,9 +105,12 @@ void loop() {
 void brevitest_run() {
   bt_setup();
 
-  bt_move_to_first_well();
-  bt_raster_first_well();
-  bt_move_to_previous_well();
+  bt_move_to_second_well();
+  bt_raster_well();
+  bt_move_back_to_analyte_well();
+  bt_raster_well();
+  bt_move_to_next_well();
+  bt_skip_well();
   
   for (int i = 0; i < number_of_wells; i += 1) {
     bt_raster_well();
@@ -124,10 +129,12 @@ void bt_setup() {
   reset_x_stage();
 }
 
-void bt_move_to_first_well() {
-  double mm = 4.0;
-  int steps = int(round(mm / mmPerStep));
-  move_steps(steps, STEP_FORWARD, SINGLE);
+void bt_move_to_second_well() {
+  move_mm(15.0);
+}
+
+void bt_move_back_to_analyte_well() {
+  move_mm(-16.0);
 }
 
 void solenoid_out() {
@@ -182,15 +189,15 @@ void move_mm(double mm) {
 }
 
 void bt_raster_first_well() {
-  raster_well(12.0);
+  raster_well(6.0);
 }
 
 void bt_move_to_next_well() {
   move_mm(4.0);
 }
 
-void bt_move_to_previous_well() {
-  move_mm(-8.0);
+void bt_skip_well() {
+  move_mm(10.0);
 }
 
 void bt_raster_well() {
@@ -202,7 +209,7 @@ void bt_raster_last_well() {
 }
 
 void bt_position_sensors() {
-  move_mm(20.0);
+  move_mm(-16.0);
 }
 
 void bt_read_sensors() {
