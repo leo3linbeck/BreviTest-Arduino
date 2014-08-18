@@ -21,7 +21,7 @@
 #define STEP_BACKWARD FORWARD
 
 #define mmPerRotation 1.0
-#define solenoidDelay 500
+#define solenoidDelay 2000
 #define mmPerRaster 0.5
 #define stepsPerRotation 200
 #define rpm 200
