@@ -120,7 +120,7 @@ if (render_platform) {
 			}
 
 	// wire terminal holes
-			translate([-50o, -30, platform_height]) {
+			translate([-50, -30, platform_height]) {
 				cylinder(r = 1.5, h = 40, center = true);
 			}
 			translate([-50, -22, platform_height]) {

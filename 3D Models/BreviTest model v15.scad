@@ -88,11 +88,16 @@ echo("solenoid_podium_length = ", solenoid_podium_length);
 solenoid_podium_width = solenoid_body_width + 2 * solenoid_margin;
 echo("solenoid_podium_width = ", solenoid_podium_width);
 
-stage_center_of_mass_y = 2 * teflon_pad_thickness + (stage_height * stage_width * stage_length * (stage_height / 2) + 2 * stage_rail_height * (stage_rail_width - stage_width) * stage_rail_length * (stage_rail_height / 2)) / (stage_height * stage_width * stage_length + stage_rail_height * 2 * (stage_rail_width - stage_width) * stage_rail_length);
+//stage_center_of_mass_y = 2 * teflon_pad_thickness + (stage_height * stage_width * stage_length * (stage_height / 2) + 2 * stage_rail_height * (stage_rail_width - stage_width) * stage_rail_length * (stage_rail_height / 2)) / (stage_height * stage_width * stage_length + stage_rail_height * 2 * (stage_rail_width - stage_width) * stage_rail_length);
+
+stage_center_of_mass_y = 12.5;
 echo("stage_center_of_mass_y = ", stage_center_of_mass_y);
 solenoid_podium_height = stage_center_of_mass_y - solenoid_body_height / 2;
 echo("solenoid_podium_height = ", solenoid_podium_height);
 echo("solenoid_elevation = ", platform_height + solenoid_podium_height + solenoid_body_height);
+
+support_height = stage_height;
+support_z_offset = platform_height + 2 * teflon_pad_thickness;
 
 if (render_platform) {
 	// platform
@@ -120,11 +125,31 @@ if (render_platform) {
 			}
 
 	// wire terminal holes
-			translate([-50, -30, platform_height]) {
+			translate([-38, -26, platform_height]) {
 				cylinder(r = 1.5, h = 40, center = true);
 			}
-			translate([-50, -22, platform_height]) {
+			translate([-46, -26, platform_height]) {
 				cylinder(r = 1.5, h = 40, center = true);
+			}
+			translate([-54, -26, platform_height]) {
+				cylinder(r = 1.5, h = 40, center = true);
+			}
+			translate([-62, -26, platform_height]) {
+				cylinder(r = 1.5, h = 40, center = true);
+			}
+
+	// solenoid holes
+			translate([-platform_side_length / 2 - solenoid_rod_min - 7.5, solenoid_podium_width / 2 - 4, platform_height]) {
+				cylinder(r = 2, h = 40, center = true);
+			}
+			translate([-platform_side_length / 2 - solenoid_rod_min - 7.5, -solenoid_podium_width / 2 + 4, platform_height]) {
+				cylinder(r = 2, h = 40, center = true);
+			}
+			translate([-platform_side_length / 2 - solenoid_rod_min - 42.5, solenoid_podium_width / 2 - 4, platform_height]) {
+				cylinder(r = 2, h = 40, center = true);
+			}
+			translate([-platform_side_length / 2 - solenoid_rod_min - 42.5, -solenoid_podium_width / 2 + 4, platform_height]) {
+				cylinder(r = 2, h = 40, center = true);
 			}
 
 	// wiring access slots
@@ -136,8 +161,8 @@ if (render_platform) {
 				cube([platform_wiring_slot_length, platform_wiring_slot_width, 2 * platform_height], center = true);
 			}
 
-			translate([platform_back_margin + platform_anchor_spacing / 2 - platform_wiring_slot_length / 2 - platform_wiring_slot_margin, 0, 0]) {
-				cube([platform_wiring_slot_length, 2 * platform_wiring_slot_width, 2 * platform_height], center = true);
+			translate([platform_back_margin + platform_anchor_spacing / 2 - platform_wiring_slot_length / 2 - platform_wiring_slot_margin, -12, 0]) {
+				cube([platform_wiring_slot_length, platform_wiring_slot_width, 2 * platform_height], center = true);
 			}
 
 			if (solenoid_podium_height < 0) {
@@ -187,6 +212,27 @@ if (render_platform) {
 				cube([solenoid_podium_length, solenoid_podium_width, solenoid_podium_height], center = true);
 		}
 	}
+
+	// overhang supports
+	for (x = [-15:5:15]) {
+		translate([x + 2, (platform_width - platform_side_width) / 2 - 12, platform_height]) {
+					translate([0.45, 0, 0]) cube([0.1, 5, 0.5]);
+					translate([0.25, 0, 0.5]) cube([0.5, 5, 0.5]);
+					translate([0, 0, 1]) cube([1, 5, platform_side_height - platform_rail_height - 2]);
+					translate([0.25, 0, platform_side_height - platform_rail_height - 1]) cube([0.5, 5, 0.5]);
+					translate([0.45, 0, platform_side_height - platform_rail_height - 0.5]) cube([0.1, 5, 0.5]);
+				}
+	}
+
+	for (x = [-15:5:15]) {
+		translate([x + 2, -(platform_width - platform_side_width) / 2 + 7, platform_height]) {
+					translate([0.45, 0, 0]) cube([0.1, 5, 0.5]);
+					translate([0.25, 0, 0.5]) cube([0.5, 5, 0.5]);
+					translate([0, 0, 1]) cube([1, 5, platform_side_height - platform_rail_height - 2]);
+					translate([0.25, 0, platform_side_height - platform_rail_height - 1]) cube([0.5, 5, 0.5]);
+					translate([0.45, 0, platform_side_height - platform_rail_height - 0.5]) cube([0.1, 5, 0.5]);
+				}
+	}
 }
 
 stage_x_offset = (stage_length - platform_side_length) / 2;
@@ -208,35 +254,43 @@ if (render_stage) {
 
 	// accessory hole slots
 	
-				for (y = [-accessory_y_offset, accessory_y_offset]) {
-				translate([0, y, stage_elevation - 4])
-					cube([46, 6, 3], center = true);
-			}
+			translate([0, accessory_y_offset, stage_elevation - 4])
+				cube([46, 6, 3], center = true);
+
+			translate([0, -accessory_y_offset, stage_elevation - 4])
+				cube([46, 6, 3], center = true);
 
 	// accessory holes
 			for (x = [-accessory_x_offset, accessory_x_spacing - accessory_x_offset]) {
 			translate([stage_x_offset + x, accessory_y_offset, stage_elevation])
 				cylinder(r = 1.5, h = 20, center = true);
 	
-			translate([stage_x_offset + x, -accessory_y_offset, stage_elevation]) {
-				cube([10, 4, 10], center = true);
+			translate([stage_x_offset + x + 3.2, -accessory_y_offset, stage_elevation]) {
+				cube([3, 6, 10], center = true);
 			}
 		}
 	}
 }
-
-for (x = [-accessory_x_offset, 22 - accessory_x_offset]) {
-	translate([stage_x_offset + x - 14.5, -accessory_y_offset - 8, stage_elevation - 0.1])
-			difference() {
-				cube([23, 25, 12]);	
-				translate([1, 1, 0]) cube([21, 23, 12]);	
-			}
-	translate([stage_x_offset - accessory_x_offset - 14.5, -accessory_y_offset - 8, stage_elevation - 0.1]) {
-				translate([9, 10.5, 0]) cube([29, 14.5, 4]);	
-				cube([9, 25, 4]);	
-			}
-	translate([stage_x_offset + accessory_x_offset + 5.5, -accessory_y_offset - 8, stage_elevation - 0.1])
-				cube([9, 25, 4]);
+translate([2, 0, 0]) {
+	for (x = [3 - accessory_x_offset, 25 - accessory_x_offset]) {
+		translate([stage_x_offset + x - 14.5, -accessory_y_offset - 8, stage_elevation - 0.1])
+				difference() {
+					cube([23.2, 23.2, 12]);	
+					translate([1, 1, 0]) cube([21.2, 21.2, 12]);	
+				}
+		translate([stage_x_offset - accessory_x_offset - 10.5, -accessory_y_offset - 8, stage_elevation - 0.1]) {
+					difference() {
+						cube([18, 23.2, 6]);
+						translate([5, 2, 0]) cube([16, 19.2, 6]);
+					}
+				}
+		translate([33 + stage_x_offset - accessory_x_offset, 15.2 - accessory_y_offset, stage_elevation - 0.1]) {
+					rotate(180, 0, 0) difference() {
+						cube([18, 23.2, 6]);
+						translate([11, 2, 0]) cube([16, 19.2, 6]);
+					}
+				}
+	}
 }
 
 	// stage rail
@@ -245,6 +299,23 @@ for (x = [-accessory_x_offset, 22 - accessory_x_offset]) {
 		translate([stage_x_offset + (stage_length - stage_rail_length) / 2, 0, platform_height + 2 * teflon_pad_thickness + stage_rail_height / 2])
 			cube([stage_rail_length, stage_rail_width, stage_rail_height], center = true);
 	}
+
+//	for (y = [-20:4:4]) {
+//		translate([-26, y, support_z_offset]) {
+//					cube([5, 1, support_height - 1]);
+//					translate([0, 0.25, support_height - 1]) cube([5, 0.5, 0.5]);
+//					translate([0, 0.4, support_height - 0.5]) cube([5, 0.2, 0.5]);
+//				}
+//	}
+
+	for (y = [-19:4.5:0]) {
+		translate([16, y + 1, support_z_offset]) {
+			cube([8, 1, support_height - 1]);
+			translate([0, 0.25, support_height - 1]) cube([8, 0.5, 0.5]);
+			translate([0, 0.4, support_height - 0.5]) cube([8, 0.2, 0.5]);
+			}
+	}
+
 }
 
 if (render_solenoid) {

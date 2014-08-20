@@ -262,6 +262,25 @@ if (render_solenoid) {
 	}
 }
 
+support_height = stage_height;
+support_z_offset = platform_height + 2 * teflon_pad_thickness;
+
+for (y = [-20:4:4]) {
+	translate([-26, y, support_z_offset]) {
+				cube([5, 1, support_height - 1]);
+				translate([0, 0.25, support_height - 1]) cube([5, 0.5, 0.5]);
+				translate([0, 0.4, support_height - 0.5]) cube([5, 0.2, 0.5]);
+			}
+}
+
+for (y = [-20:4:4]) {
+	translate([14, y, support_z_offset]) {
+				cube([5, 1, support_height - 1]);
+				translate([0, 0.25, support_height - 1]) cube([5, 0.5, 0.5]);
+				translate([0, 0.4, support_height - 0.5]) cube([5, 0.2, 0.5]);
+			}
+}
+
 p_y = 1.5; // path width
 p_x = 4; // path length
 w_x = 6; // well length
