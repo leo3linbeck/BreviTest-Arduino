@@ -1,7 +1,8 @@
 $fn = 50;
 
 render_platform = false;
-render_stage = true;
+render_stage = false;
+render_sensor_cap = true;
 render_solenoid = false;
 render_cartridge = false;
 
@@ -139,35 +140,24 @@ if (render_platform) {
 			}
 
 	// solenoid holes
-			translate([-platform_side_length / 2 - solenoid_rod_min - 7.5, solenoid_podium_width / 2 - 4, platform_height]) {
+			translate([-platform_side_length / 2 - solenoid_rod_min - 8, solenoid_podium_width / 2 - 4, platform_height]) {
 				cylinder(r = 2, h = 40, center = true);
 			}
-			translate([-platform_side_length / 2 - solenoid_rod_min - 7.5, -solenoid_podium_width / 2 + 4, platform_height]) {
+			translate([-platform_side_length / 2 - solenoid_rod_min - 8, -solenoid_podium_width / 2 + 4, platform_height]) {
 				cylinder(r = 2, h = 40, center = true);
 			}
-			translate([-platform_side_length / 2 - solenoid_rod_min - 42.5, solenoid_podium_width / 2 - 4, platform_height]) {
+			translate([-platform_side_length / 2 - solenoid_rod_min - 43, solenoid_podium_width / 2 - 4, platform_height]) {
 				cylinder(r = 2, h = 40, center = true);
 			}
-			translate([-platform_side_length / 2 - solenoid_rod_min - 42.5, -solenoid_podium_width / 2 + 4, platform_height]) {
+			translate([-platform_side_length / 2 - solenoid_rod_min - 43, -solenoid_podium_width / 2 + 4, platform_height]) {
 				cylinder(r = 2, h = 40, center = true);
-			}
-
-	// wiring access slots
-			translate([-(platform_length - platform_back_margin - platform_anchor_spacing / 2 - platform_wiring_slot_length / 2) + platform_wiring_slot_margin, (platform_width - platform_wiring_slot_width) / 2 - platform_wiring_slot_margin, 0]) {
-				cube([platform_wiring_slot_length, platform_wiring_slot_width, 2 * platform_height], center = true);
-			}
-
-			translate([-(platform_length - platform_back_margin - platform_anchor_spacing / 2 - platform_wiring_slot_length / 2) + platform_wiring_slot_margin, -(platform_width - platform_wiring_slot_width) / 2 + platform_wiring_slot_margin, 0]) {
-				cube([platform_wiring_slot_length, platform_wiring_slot_width, 2 * platform_height], center = true);
-			}
-
-			translate([platform_back_margin + platform_anchor_spacing / 2 - platform_wiring_slot_length / 2 - platform_wiring_slot_margin, -12, 0]) {
-				cube([platform_wiring_slot_length, platform_wiring_slot_width, 2 * platform_height], center = true);
 			}
 
 			if (solenoid_podium_height < 0) {
-				translate([-(platform_side_length + solenoid_podium_length) / 2 - solenoid_rod_min + solenoid_margin, 0, platform_height + solenoid_podium_height / 2])
+				translate([-(platform_side_length + solenoid_podium_length) / 2 - solenoid_rod_min + solenoid_margin, 0, platform_height + solenoid_podium_height / 2]) {
 					cube([solenoid_podium_length, solenoid_podium_width, -2 * solenoid_podium_height], center = true);
+//					translate([6, 0, -0.7]) cube([solenoid_podium_length - 12, solenoid_podium_width, -2 * solenoid_podium_height], center = true);
+				}
 			}
 		}
 	}
@@ -214,25 +204,25 @@ if (render_platform) {
 	}
 
 	// overhang supports
-	for (x = [-15:5:15]) {
-		translate([x + 2, (platform_width - platform_side_width) / 2 - 12, platform_height]) {
-					translate([0.45, 0, 0]) cube([0.1, 5, 0.5]);
-					translate([0.25, 0, 0.5]) cube([0.5, 5, 0.5]);
-					translate([0, 0, 1]) cube([1, 5, platform_side_height - platform_rail_height - 2]);
-					translate([0.25, 0, platform_side_height - platform_rail_height - 1]) cube([0.5, 5, 0.5]);
-					translate([0.45, 0, platform_side_height - platform_rail_height - 0.5]) cube([0.1, 5, 0.5]);
-				}
-	}
-
-	for (x = [-15:5:15]) {
-		translate([x + 2, -(platform_width - platform_side_width) / 2 + 7, platform_height]) {
-					translate([0.45, 0, 0]) cube([0.1, 5, 0.5]);
-					translate([0.25, 0, 0.5]) cube([0.5, 5, 0.5]);
-					translate([0, 0, 1]) cube([1, 5, platform_side_height - platform_rail_height - 2]);
-					translate([0.25, 0, platform_side_height - platform_rail_height - 1]) cube([0.5, 5, 0.5]);
-					translate([0.45, 0, platform_side_height - platform_rail_height - 0.5]) cube([0.1, 5, 0.5]);
-				}
-	}
+//	for (x = [-15:5:15]) {
+//		translate([x + 2, (platform_width - platform_side_width) / 2 - 12, platform_height]) {
+//					translate([0.45, 0, 0]) cube([0.1, 5, 0.5]);
+//					translate([0.25, 0, 0.5]) cube([0.5, 5, 0.5]);
+//					translate([0, 0, 1]) cube([1, 5, platform_side_height - platform_rail_height - 2]);
+//					translate([0.25, 0, platform_side_height - platform_rail_height - 1]) cube([0.5, 5, 0.5]);
+//					translate([0.45, 0, platform_side_height - platform_rail_height - 0.5]) cube([0.1, 5, 0.5]);
+//				}
+//	}
+//
+//	for (x = [-15:5:15]) {
+//		translate([x + 2, -(platform_width - platform_side_width) / 2 + 7, platform_height]) {
+//					translate([0.45, 0, 0]) cube([0.1, 5, 0.5]);
+//					translate([0.25, 0, 0.5]) cube([0.5, 5, 0.5]);
+//					translate([0, 0, 1]) cube([1, 5, platform_side_height - platform_rail_height - 2]);
+//					translate([0.25, 0, platform_side_height - platform_rail_height - 1]) cube([0.5, 5, 0.5]);
+//					translate([0.45, 0, platform_side_height - platform_rail_height - 0.5]) cube([0.1, 5, 0.5]);
+//				}
+//	}
 }
 
 stage_x_offset = (stage_length - platform_side_length) / 2;
@@ -250,12 +240,12 @@ if (render_stage) {
 
 	// solenoid rod nut slot
 			translate([4 - platform_side_length / 2, 0, platform_height + solenoid_podium_height + solenoid_body_height / 2 - 3])
-				cube([3, 6, 16], center = true);
+				cube([2.8, 6, 16], center = true);
 
 	// accessory hole slots
 	
 			translate([0, accessory_y_offset, stage_elevation - 4])
-				cube([46, 6, 3], center = true);
+				cube([46, 6, 2.8], center = true);
 
 	// accessory holes
 			for (x = [-accessory_x_offset, accessory_x_spacing - accessory_x_offset]) {
@@ -265,25 +255,28 @@ if (render_stage) {
 	}
 }
 translate([3, 0, 0]) {
-	for (x = [3 - accessory_x_offset, 25 - accessory_x_offset]) {
-		translate([stage_x_offset + x - 14.5, -accessory_y_offset - 8, stage_elevation - 0.1])
+	translate([stage_x_offset - accessory_x_offset - 11.5, -accessory_y_offset - 8, stage_elevation - 0.1])
+			difference() {
+				cube([39.4, 23.2, 11]);	
+				translate([1, 1, 0]) cube([37.4, 21.2, 11]);	
+				translate([-1, 4, 0]) cube([10, 10, 2.5]);	
+			}
+
+	translate([stage_x_offset - accessory_x_offset - 10.5, -accessory_y_offset - 8, stage_elevation - 0.1]) {
 				difference() {
-					cube([23.2, 23.2, 12]);	
-					translate([1, 1, 0]) cube([21.2, 21.2, 12]);	
+					cube([16, 23.2, 8]);
+					translate([0, 2, 0]) cube([16, 19.2, 8]);
+					translate([-1, 4, 0]) cube([10, 10, 2.5]);	
 				}
-		translate([stage_x_offset - accessory_x_offset - 10.5, -accessory_y_offset - 8, stage_elevation - 0.1]) {
-					difference() {
-						cube([18, 23.2, 8]);
-						translate([5, 2, 0]) cube([16, 19.2, 8]);
-					}
+				translate([20, 1, 8]) cube([2, 1, 3]);
+				translate([20, 21.2, 8]) cube([2, 1, 3]);
+			}
+	translate([28 + stage_x_offset - accessory_x_offset, 15.2 - accessory_y_offset, stage_elevation - 0.1]) {
+				rotate(180, 0, 0) difference() {
+					cube([23.2, 23.2, 4]);
+					translate([12, 2, 0]) cube([16, 19.2, 4]);
 				}
-		translate([33 + stage_x_offset - accessory_x_offset, 15.2 - accessory_y_offset, stage_elevation - 0.1]) {
-					rotate(180, 0, 0) difference() {
-						cube([18, 23.2, 2]);
-						translate([14, 4, 0]) cube([16, 19.2, 4]);
-					}
-				}
-	}
+			}
 }
 
 	// stage rail
@@ -293,22 +286,27 @@ translate([3, 0, 0]) {
 			cube([stage_rail_length, stage_rail_width, stage_rail_height], center = true);
 	}
 
-//	for (y = [-20:4:4]) {
-//		translate([-26, y, support_z_offset]) {
-//					cube([5, 1, support_height - 1]);
-//					translate([0, 0.25, support_height - 1]) cube([5, 0.5, 0.5]);
-//					translate([0, 0.4, support_height - 0.5]) cube([5, 0.2, 0.5]);
-//				}
+//	for (y = [-19:4.5:0]) {
+//		translate([13.5, y + 1, support_z_offset]) {
+//			cube([8, 1, support_height - 1]);
+//			translate([0, 0.25, support_height - 1]) cube([8, 0.5, 0.5]);
+//			translate([0, 0.4, support_height - 0.5]) cube([8, 0.2, 0.5]);
+//			}
 //	}
 
-	for (y = [-19:4.5:0]) {
-		translate([16, y + 1, support_z_offset]) {
-			cube([8, 1, support_height - 1]);
-			translate([0, 0.25, support_height - 1]) cube([8, 0.5, 0.5]);
-			translate([0, 0.4, support_height - 0.5]) cube([8, 0.2, 0.5]);
-			}
-	}
+}
 
+if (render_sensor_cap) {
+	translate([1, -2, -2]) {
+		translate([stage_x_offset - accessory_x_offset - 11.5, -accessory_y_offset - 8, stage_elevation + 10]) {
+			difference() {
+				cube([45.4, 27.2, 6]);	
+				translate([2, 2, -2]) cube([41.4, 23.2, 6]);	
+				translate([9.6, 9.6, 0]) cube([8, 8, 12]);	
+				translate([25.6, 9.6, 0]) cube([8, 8, 12]);	
+			}
+		}
+	}
 }
 
 if (render_solenoid) {

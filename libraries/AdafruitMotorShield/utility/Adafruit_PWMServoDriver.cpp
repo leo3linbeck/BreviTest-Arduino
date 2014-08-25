@@ -28,8 +28,11 @@ Adafruit_PWMServoDriver::Adafruit_PWMServoDriver(uint8_t addr) {
 }
 
 void Adafruit_PWMServoDriver::begin(void) {
+ Serial.println("_pwm.begin() WIRE.begin()");
  WIRE.begin();
+ Serial.println("_pwm.begin() reset()");
  reset();
+ Serial.println("_pwm.begin() reset() complete");
 }
 
 
@@ -98,13 +101,25 @@ uint8_t Adafruit_PWMServoDriver::read8(uint8_t addr) {
 }
 
 void Adafruit_PWMServoDriver::write8(uint8_t addr, uint8_t d) {
+ Serial.print("write8() _i2caddr: ");
+ Serial.print(_i2caddr);
+ Serial.print(" addr: ");
+ Serial.print(addr);
+ Serial.print(" d: ");
+ Serial.println(d);
   WIRE.beginTransmission(_i2caddr);
+ Serial.println("beginTransmission complete");
 #if ARDUINO >= 100
   WIRE.write(addr);
+ Serial.println("WIRE.write(addr); complete");
   WIRE.write(d);
+ Serial.println("WIRE.write(d); complete");
 #else
   WIRE.send(addr);
+ Serial.println(" WIRE.send(addr); complete");
   WIRE.send(d);
+ Serial.println("WIRE.send(d); complete");
 #endif
   WIRE.endTransmission();
+ Serial.println("endTransmission complete");
 }

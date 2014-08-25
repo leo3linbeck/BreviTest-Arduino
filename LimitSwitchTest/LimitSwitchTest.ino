@@ -1,5 +1,5 @@
-#define pinFrontLimitSwitch 12
-#define pinBackLimitSwitch 11
+#define pinFrontLimitSwitch 6
+#define pinBackLimitSwitch 5
 
 void setup() {
   int initialState;
