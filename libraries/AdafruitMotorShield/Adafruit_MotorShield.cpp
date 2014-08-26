@@ -43,17 +43,12 @@ Adafruit_MotorShield::Adafruit_MotorShield(uint8_t addr) {
 
 void Adafruit_MotorShield::begin(uint16_t freq) {
   // init PWM w/_freq
-  Serial.println("WIRE.begin()");
   WIRE.begin();
-  Serial.println("_pwm.begin()");
   _pwm.begin();
   _freq = freq;
-  Serial.println("_pwm.setPWMFreq(_freq)");
   _pwm.setPWMFreq(_freq);  // This is the maximum PWM frequency
-  Serial.println("_pwm.setPWM(i) loop");
   for (uint8_t i=0; i<16; i++) 
     _pwm.setPWM(i, 0, 0);
-  Serial.println("_pwm.setPWM(i) loop complete");
 }
 
 void Adafruit_MotorShield::setPWM(uint8_t pin, uint16_t value) {

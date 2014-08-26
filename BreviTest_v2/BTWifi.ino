@@ -26,20 +26,21 @@ void wifi_loop() {
  
         //if HTTP request has ended
         if (c == '\n' && currentLineIsBlank) {
-           ///////////////////// control motor
            Serial.println(F("HTTP request:"));
            Serial.println(httpRequest);
  
-           if(httpRequest.indexOf("run_brevitest") > 0) {
+           if (httpRequest.indexOf("run_brevitest") > 0) {
               run_brevitest();
-            }
-           if(httpRequest.indexOf("read_sensors") > 0) {
-              get_sensor_readings();
-            }
-            else {  // HTTP request for web page
-            // send web page - contains JavaScript with AJAX calls
-            serveWebPage(client);
-          }
+           }
+           else {
+             if (httpRequest.indexOf("read_sensors") > 0) {
+                get_sensor_readings();
+             }
+             else {  // HTTP request for web page
+                // send web page - contains JavaScript with AJAX calls
+                serveWebPage(client);
+             }
+           }
           //clearing string for next read
           httpRequest="";
           break;
@@ -58,7 +59,7 @@ void wifi_loop() {
      } // end if (client.available())
     } // end while (client.connected())
     
-    delay(10);
+    delay(1);
     //stopping client
     client.stop();
     Serial.println(F("Client disconnected"));
@@ -69,22 +70,28 @@ boolean connectToWiFiNetwork() {
   // attempt to connect using WPA2 encryption:
   Serial.println(F("Attempting to connect to WPA network..."));
   wifi_status = WiFi.begin(ssid, pass);
-  Serial.println(F("WiFi started..."));
 
   // if you're not connected, stop here:
   if (wifi_status != WL_CONNECTED) { 
-    Serial.println(F("Couldn't get a wifi connection"));
-    return false;
-  } 
-  // if you are connected, print out info about the connection:
+      Serial.println(F("Couldn't connect, trying alternate network..."));
+    wifi_status = WiFi.begin(ssid2, pass2);
+    if (wifi_status != WL_CONNECTED) { 
+      Serial.println(F("Couldn't get a wifi connection"));
+      return false;
+    }
+    else {
+      Serial.print(F("Connected to network "));
+      Serial.println(ssid2);
+    }
+  }
   else {
-    ip_address = WiFi.localIP();
     Serial.print(F("Connected to network "));
     Serial.println(ssid);
-    Serial.print(F("IP address: "));
-    Serial.println(ip_address);
-    return true;
   }
+  ip_address = WiFi.localIP();
+  Serial.print(F("IP address: "));
+  Serial.println(ip_address);
+  return true;
 }
 
 void startServer() {
@@ -97,38 +104,41 @@ void startServer() {
 
 void serveWebPage(WiFiClient client) {
   Serial.println(F("Start serveWebPage"));
-  client.println(F("HTTP/1.1 200 OK")); //send new page
-  client.println(F("Content-Type: text/html"));
-  client.println(F("Connection: keep-alive"));
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: text/html");
+  client.println("Connection: keep-alive");
   client.println();
-   
-  client.println(F("<HTML>"));
-  client.println(F("<HEAD>"));
-  client.println(F("<meta name='apple-mobile-web-app-capable' content='yes' />"));
-  client.println(F("<meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />"));
-  client.println(F("<TITLE>BreviTest Console</TITLE>"));
-  client.println(F("<link rel='stylesheet' href='http://www.csszengarden.com/examples/style.css' type='text/css'>"));
-  client.println(F("<script>"));
-  client.println(F("function callBreviTestFunction(func_name) {"));
+  client.println("<!DOCTYPE HTML>");
+  client.println("<HTML>");
+  client.println("<HEAD>");
+  client.println("<TITLE>BreviTest Console</TITLE>");
+  client.print("<link rel='stylesheet' ");
+  client.print("href='http://www.csszengarden.com/examples/style.css' ");
+  client.println("type='text/css'>");
+  client.println("<script>");
+  client.println("function callBreviTestFunction(func_name) {");
   client.println("nocache = '&nocache=' + Math.random() * 1000000;");
-  client.println(F("var request = new XMLHttpRequest();"));
-  client.println(F("request.open('GET', func_name + nocache, true);"));
-  client.println(F("request.send(null);"));
-  client.println(F("}"));
-  client.println(F("</script>"));
-  client.println(F("</HEAD>"));
-  client.println(F("<BODY>"));
-  client.println(F("<H1>BreviTest Test Console</H1>"));
-  client.print(F("<H2>IP Address: "));
+  client.println("var request = new XMLHttpRequest();");
+  client.println("request.open('GET', func_name + nocache, true);");
+  client.println("request.send(null);");
+  client.println("}");
+  client.println("</script>");
+  client.println("</HEAD>");
+  client.println("<BODY>");
+  client.println("<H1>BreviTest Test Console</H1>");
+  client.print("<H2>IP Address: ");
   client.print(WiFi.localIP());
-  client.println(F("</H2>"));
-  client.println(F("<hr />"));
-  client.println(F("<br />"));
-  client.println(F("<button type='button' onclick=callBreviTestFunction('run_brevitest')>Run BreviTest</button>"));
-  client.println(F("<button type='button' onclick=callBreviTestFunction('read_sensors')>Read Sensors</button>"));
-
-  client.println(F("</BODY>"));
-  client.println(F("</HTML>"));
+  client.println("</H2>");
+  client.println("<hr />");
+  client.println("<br />");
+  client.print("<button type='button' ");
+  client.print("onclick=callBreviTestFunction('run_brevitest')>");
+  client.println("Run BreviTest</button>");
+  client.print("<button type='button' ");
+  client.print("onclick=callBreviTestFunction('read_sensors')>");
+  client.println("Read Sensors</button>");
+  client.println("</BODY>");
+  client.println("</HTML>");
   Serial.println(F("End serveWebPage"));
 }
 

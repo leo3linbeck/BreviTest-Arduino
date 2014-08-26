@@ -47,8 +47,10 @@ Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_StepperMotor *motor = AFMS.getStepper(stepsPerRotation, channelMotor);
 Adafruit_DCMotor *solenoid = AFMS.getMotor(channelSolenoid);
 
-char ssid[] = "AlphaDev Wifi 2";     //  your network SSID (name) 
-char pass[] = "alpha123";    // your network password
+char ssid2[] = "AlphaDev Wifi 2";     //  your network SSID (name) 
+char pass2[] = "alpha123";    // your network password
+char ssid[] = "Linbeck Home";     //  your network SSID (name) 
+char pass[] = "2january88";    // your network password
 int wifi_status = WL_IDLE_STATUS;     // the Wifi radio's status
 WiFiServer server(80);
 String httpRequest;
@@ -75,11 +77,12 @@ void setup() {
   device_setup();
   
   // set up wifi
-  wifi_setup();
+//  wifi_setup();
 }
 
 void loop() {
-  wifi_loop();
+//  wifi_loop();
+  run_brevitest();
 }
 
 
