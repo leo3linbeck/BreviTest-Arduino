@@ -10,6 +10,7 @@ void device_setup() {
   Serial.println(F("Initializing solenoid"));
   solenoid->setSpeed(solenoid_power);
   
+  move_mm(5.0);
   reset_x_stage();
 }
 
@@ -93,7 +94,7 @@ void move_steps(int steps, int dir, int rate) {
   Serial.print(F("Moving "));
   Serial.print(steps);
   Serial.println(F(" steps"));
-  for (int i = 0; i < steps; i += 1) {
+  for (int i = 0; i < steps; i += 10) {
     if (dir == STEP_FORWARD && digitalRead(pinFrontLimitSwitch) == HIGH) {
       Serial.println(F("Front limit switch tripped"));
       return;
@@ -102,8 +103,9 @@ void move_steps(int steps, int dir, int rate) {
       Serial.println(F("Back limit switch tripped"));
       return;
     }
-    motor->step(1, dir, rate);
+    motor->step(10, dir, rate);
   }
+  motor->step(steps%10, dir, rate);
 }
 
 void move_steps_slow(int steps, int dir, int rate) {

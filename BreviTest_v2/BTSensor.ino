@@ -58,7 +58,7 @@ void get_sensor_readings() {
   Adafruit_TCS34725 sensor;
   
   digitalWrite(pinControlSensorVin, LOW);
-  analogWrite(pinAssaySensorLED, 500);
+  analogWrite(pinAssaySensorLED, 1000);
   sensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_16X);
   delay(500);
   sensor.enable();
@@ -78,7 +78,7 @@ void get_sensor_readings() {
   Serial.println("Assay sensor reading complete");
   
   digitalWrite(pinAssaySensorVin, LOW);
-  analogWrite(pinControlSensorLED, 500);
+  analogWrite(pinControlSensorLED, 1000);
   sensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_16X);
   delay(500);
   sensor.enable();
