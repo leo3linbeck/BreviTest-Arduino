@@ -26,20 +26,20 @@ void run_brevitest() {
 
   bt_move_to_second_well();
   bt_raster_well();
-  bt_move_back_to_analyte_well();
-  bt_raster_well();
+//  bt_move_back_to_analyte_well();
+//  bt_raster_well();
   bt_move_to_next_well();
-  bt_skip_well();
-  
-  for (int i = 0; i < number_of_wells; i += 1) {
+//  bt_skip_well();
+//  
+//  for (int i = 0; i < number_of_wells; i += 1) {
     bt_raster_well();
-    bt_move_to_next_well();
-  }
-  
-  bt_raster_last_well();
-  bt_position_sensors();
-  bt_read_sensors();
-
+//    bt_move_to_next_well();
+//  }
+//  
+//  bt_raster_last_well();
+//  bt_position_sensors();
+//  bt_read_sensors();
+//
   bt_cleanup();
 }
 
@@ -49,7 +49,7 @@ void bt_setup() {
 
 void bt_move_to_second_well() {
   Serial.println(F("Moving to second well"));
-  move_mm(15.0);
+  move_mm(16.0);
 }
 
 void bt_move_back_to_analyte_well() {
@@ -68,15 +68,25 @@ void solenoid_in() {
 }
 
 void raster_well(double mm) {
-  int number_of_rasters = int(round(mm / mmPerRaster));
+//  int number_of_rasters = int(round(mm / mmPerRaster));
+  int number_of_rasters = 40;
   
   for (int i = 0; i < number_of_rasters; i += 1) {
-    move_steps(stepsPerRaster, STEP_FORWARD, SINGLE);
-    delay(solenoidDelayAfterRaster);
-    solenoid_in();
-    delay(solenoidDelay);
-    solenoid_out();
+    move_steps(25, STEP_FORWARD, SINGLE);
+    if (i < 5) {
+      delay(1000);
+      solenoid_in();
+      delay(1000);
+      solenoid_out();
+    }
+    else {
+      delay(250);
+      solenoid_in();
+      delay(700);
+      solenoid_out();
+    }
   }
+  delay(2000);
 }
 
 void move_steps(int steps, int dir, int rate) {
@@ -96,15 +106,33 @@ void move_steps(int steps, int dir, int rate) {
   }
 }
 
+void move_steps_slow(int steps, int dir, int rate) {
+  Serial.print(F("Moving "));
+  Serial.print(steps);
+  Serial.println(F(" steps"));
+  for (int i = 0; i < steps; i += 1) {
+    if (dir == STEP_FORWARD && digitalRead(pinFrontLimitSwitch) == HIGH) {
+      Serial.println(F("Front limit switch tripped"));
+      return;
+    }
+    if (dir == STEP_BACKWARD && digitalRead(pinBackLimitSwitch) == HIGH) {
+      Serial.println(F("Back limit switch tripped"));
+      return;
+    }
+    motor->step(1, dir, rate);
+    delay(10);
+  }
+}
+
 void move_mm(double mm) {
   int steps = int(round(abs(mm) / mmPerStep));
   Serial.print(F("Steps: "));
   Serial.println(steps);
   if (mm > 0) {
-    move_steps(steps, STEP_FORWARD, SINGLE);
+    move_steps(steps, STEP_FORWARD, DOUBLE);
   }
   else {
-    move_steps(steps, STEP_BACKWARD, SINGLE);
+    move_steps(steps, STEP_BACKWARD, DOUBLE);
   }
 }
 
@@ -115,7 +143,7 @@ void bt_raster_first_well() {
 
 void bt_move_to_next_well() {
   Serial.println(F("Moving to next well"));
-  move_mm(4.0);
+  move_mm(6.0);
 }
 
 void bt_skip_well() {

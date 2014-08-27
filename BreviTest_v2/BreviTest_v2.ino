@@ -32,7 +32,7 @@
 #define number_of_sensor_readings 10
 #define delay_between_sensor_readings 500
 
-#define solenoid_power 180
+#define solenoid_power 190
 
 double rps = rpm / 60.0;
 double mmPerSec = mmPerRotation * rps;
@@ -71,18 +71,20 @@ void setup() {
   delay(500);
   
   // setup sensors
-//  sensor_setup();
+  sensor_setup();
 
   // set up stepping motor and solenoid
   device_setup();
+//  run_brevitest();
   
   // set up wifi
 //  wifi_setup();
+
+  get_sensor_readings();
 }
 
 void loop() {
 //  wifi_loop();
-  run_brevitest();
 }
 
 
