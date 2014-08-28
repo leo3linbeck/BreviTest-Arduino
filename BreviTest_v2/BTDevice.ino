@@ -3,6 +3,8 @@ void device_setup() {
   pinMode(pinFrontLimitSwitch, INPUT);
   pinMode(pinBackLimitSwitch, INPUT);
   
+  Serial.println(digitalRead(pinFrontLimitSwitch));
+  Serial.println(digitalRead(pinBackLimitSwitch));
   Serial.println(F("Initializing motor shield"));
   AFMS.begin();
   Serial.println(F("Initializing motor"));
@@ -10,7 +12,6 @@ void device_setup() {
   Serial.println(F("Initializing solenoid"));
   solenoid->setSpeed(solenoid_power);
   
-  move_mm(5.0);
   reset_x_stage();
 }
 
@@ -19,43 +20,6 @@ void reset_x_stage() {
   move_steps(30000, STEP_BACKWARD, DOUBLE);
   motor->release();
   delay(1000);
-}
-
-void run_brevitest() {
-  Serial.println(F("Running BreviTest..."));
-  bt_setup();
-
-  bt_move_to_second_well();
-  bt_raster_well();
-//  bt_move_back_to_analyte_well();
-//  bt_raster_well();
-  bt_move_to_next_well();
-//  bt_skip_well();
-//  
-//  for (int i = 0; i < number_of_wells; i += 1) {
-    bt_raster_well();
-//    bt_move_to_next_well();
-//  }
-//  
-//  bt_raster_last_well();
-//  bt_position_sensors();
-//  bt_read_sensors();
-//
-  bt_cleanup();
-}
-
-void bt_setup() {
-  reset_x_stage();
-}
-
-void bt_move_to_second_well() {
-  Serial.println(F("Moving to second well"));
-  move_mm(16.0);
-}
-
-void bt_move_back_to_analyte_well() {
-  Serial.println(F("Moving back to analyte well"));
-  move_mm(-16.0);
 }
 
 void solenoid_out() {
@@ -68,16 +32,36 @@ void solenoid_in() {
     solenoid->run(FORWARD);
 }
 
-void raster_well(double mm) {
-//  int number_of_rasters = int(round(mm / mmPerRaster));
-  int number_of_rasters = 40;
+void run_brevitest() {
+  Serial.println(F("Running BreviTest..."));
+  reset_x_stage();
+
+  bt_move_to_second_well();
+  for (int i = 0; i < number_of_wells; i += 1) {
+    raster_well(5.0);
+    bt_move_to_next_well();
+  }
   
+  raster_well(7.0);
+  bt_position_sensors();
+  bt_read_sensors();
+
+  bt_cleanup();
+}
+
+void bt_move_to_second_well() {
+  Serial.println(F("Moving to second well"));
+  move_mm(15.0);
+}
+
+void raster_well(double mm) {
+  int number_of_rasters = int(round(mm/ mmPerRaster));
   for (int i = 0; i < number_of_rasters; i += 1) {
-    move_steps(25, STEP_FORWARD, SINGLE);
+    move_mm(mmPerRaster);
     if (i < 5) {
-      delay(1000);
+      delay(500);
       solenoid_in();
-      delay(1000);
+      delay(1200);
       solenoid_out();
     }
     else {
@@ -87,28 +71,9 @@ void raster_well(double mm) {
       solenoid_out();
     }
   }
-  delay(2000);
+  delay(4000);
 }
-
 void move_steps(int steps, int dir, int rate) {
-  Serial.print(F("Moving "));
-  Serial.print(steps);
-  Serial.println(F(" steps"));
-  for (int i = 0; i < steps; i += 10) {
-    if (dir == STEP_FORWARD && digitalRead(pinFrontLimitSwitch) == HIGH) {
-      Serial.println(F("Front limit switch tripped"));
-      return;
-    }
-    if (dir == STEP_BACKWARD && digitalRead(pinBackLimitSwitch) == HIGH) {
-      Serial.println(F("Back limit switch tripped"));
-      return;
-    }
-    motor->step(10, dir, rate);
-  }
-  motor->step(steps%10, dir, rate);
-}
-
-void move_steps_slow(int steps, int dir, int rate) {
   Serial.print(F("Moving "));
   Serial.print(steps);
   Serial.println(F(" steps"));
@@ -122,7 +87,6 @@ void move_steps_slow(int steps, int dir, int rate) {
       return;
     }
     motor->step(1, dir, rate);
-    delay(10);
   }
 }
 
@@ -138,29 +102,9 @@ void move_mm(double mm) {
   }
 }
 
-void bt_raster_first_well() {
-  Serial.println(F("Rastering first well well"));
-  raster_well(6.0);
-}
-
 void bt_move_to_next_well() {
   Serial.println(F("Moving to next well"));
-  move_mm(6.0);
-}
-
-void bt_skip_well() {
-  Serial.println(F("Skipping well"));
-  move_mm(10.0);
-}
-
-void bt_raster_well() {
-  Serial.println(F("Rastering well"));
-  raster_well(6.0);
-}
-
-void bt_raster_last_well() {
-  Serial.println(F("Rastering last well"));
-  raster_well(8.0);
+  move_mm(5.0);
 }
 
 void bt_position_sensors() {

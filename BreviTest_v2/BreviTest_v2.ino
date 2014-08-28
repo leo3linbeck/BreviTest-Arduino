@@ -28,7 +28,7 @@
 #define stepsPerRotation 200
 #define rpm 200
 
-#define number_of_wells 5   // does not include analyte, antibody, and color wells
+#define number_of_wells 6   // does not include microbead and color wells
 #define number_of_sensor_readings 10
 #define delay_between_sensor_readings 500
 
@@ -75,12 +75,11 @@ void setup() {
 
   // set up stepping motor and solenoid
   device_setup();
-//  run_brevitest();
   
   // set up wifi
 //  wifi_setup();
 
-  get_sensor_readings();
+  run_brevitest();
 }
 
 void loop() {
