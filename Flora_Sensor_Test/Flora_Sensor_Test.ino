@@ -1,3 +1,83 @@
+#include <Wire.h>
+#include <Adafruit_TCS34725.h>
+
+#define pinAssaySensor 4
+#define pinControlSensor 2
+
+Adafruit_TCS34725 sensor;
+
+struct RawSensorReading {
+  uint16_t r;
+  uint16_t g;
+  uint16_t b;
+  uint16_t c;
+};
+
+struct SensorReading {
+  RawSensorReading raw;
+  struct norm {
+    float r;
+    float g;
+    float b;
+  } norm;
+  int colorTemp;
+  int lux;
+  
+  SensorReading() {
+    raw.r = 0;
+    raw.g = 0;
+    raw.b = 0;
+    raw.c = 0;
+    norm.r = 0;
+    norm.g = 0;
+    norm.b = 0;
+    colorTemp = 0;
+    lux = 0;
+  }
+};
+
+struct SensorReadingDiff {
+  struct raw {
+    int r;
+    int g;
+    int b;
+    int c;
+  } raw;
+  
+  struct norm {
+    float r;
+    float g;
+    float b;
+  } norm;
+  
+  SensorReadingDiff() {
+    raw.r = 0;
+    raw.g = 0;
+    raw.b = 0;
+    raw.c = 0;
+    
+    norm.r = 0;
+    norm.g = 0;
+    norm.b = 0;
+  }
+};
+
+struct SensorSample {
+  long r;
+  long g;
+  long b;
+  long c;
+  int count;
+  
+  SensorSample() {
+    r = 0;
+    g = 0;
+    b = 0;
+    c = 0;
+    count = 0;
+  }
+};
+
 void sample_sensor(SensorSample *sample, SensorReading *reading, int count);
 void get_one_sensor_reading(SensorReading *baseline);
 void average_sample(SensorSample *sample, SensorReading *reading);
@@ -10,45 +90,28 @@ void diff_reading_from_baseline(SensorReadingDiff *diff, SensorReading *reading,
 SensorReading assayBaseline, controlBaseline;
 int reading_count = 0;
 
-void sensor_setup() {
-  Serial.println(F("Initializing sensors"));
+void setup() {
+  Serial.begin(9600);
+  Serial.println(F("Serial port started"));
+  delay(500);
   
-//  digitalWrite(pinAssaySensor, HIGH);
-//  sensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
-//  Serial.println(F("Starting up assay sensor"));
-//  sensor.begin();
-//  delay(100);
-//  Serial.println(F("Turning off assay sensor LED"));
-//  sensor.setInterrupt(true);
-//  digitalWrite(pinAssaySensor, LOW);
-//  
-//  digitalWrite(pinControlSensor, HIGH);
-//  sensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
-//  Serial.println(F("Starting up control sensor"));
-//  sensor.begin();
-//  delay(100);
-//  Serial.println(F("Turning off control sensor LED"));
-//  sensor.setInterrupt(true);
-//
-//  digitalWrite(pinControlSensor, LOW);
+  pinMode(pinAssaySensor, OUTPUT);
+  pinMode(pinControlSensor, OUTPUT);
+  
+  digitalWrite(pinAssaySensor, HIGH);
+  digitalWrite(pinControlSensor, HIGH);
 
-//  digitalWrite(pinAssaySensor, LOW);
-//  digitalWrite(pinControlSensor, LOW);
-
-//  Serial.println(F("Setting assay sensor"));
-//  digitalWrite(pinControlSensor, LOW);
-//  sensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
-//  sensor.begin();
-//  delay(100);
-////  sensor.setInterrupt(true);
-//  digitalWrite(pinControlSensor, HIGH);
-//  
-//  Serial.println(F("Setting control sensor"));
-//  digitalWrite(pinAssaySensor, LOW);
-//  sensor.begin();
-//  delay(100);
-////  sensor.setInterrupt(true);
-//  digitalWrite(pinAssaySensor, HIGH);
+  sensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
+  sensor.begin();
+  
+  digitalWrite(pinAssaySensor, LOW);
+  digitalWrite(pinControlSensor, LOW);
+  
+  Serial.println(F("Assay sensor baseline:"));
+  get_baseline_sensor_reading(pinAssaySensor, &assayBaseline);
+  Serial.println(F("Control sensor baseline:"));
+  get_baseline_sensor_reading(pinControlSensor, &controlBaseline);
+  Serial.println(F("Baseline readings complete."));
 }
 
 void normalize_sensor_reading(SensorReading *reading) {
@@ -63,18 +126,10 @@ void get_baseline_sensor_reading(int pin, SensorReading *baseline) {
     
     digitalWrite(pin, HIGH);
     delay(100);
-    sensor.setInterrupt(false);
+    
     sample_sensor(&sample, baseline, 20);
     normalize_sensor_reading(baseline);
     print_sensor_reading(baseline);
-    sensor.setInterrupt(true);
-
-//    if (pin == pinAssaySensor) {
-//      digitalWrite(pinControlSensor, HIGH);
-//    }
-//    else {
-//      digitalWrite(pinAssaySensor, HIGH);
-//    }
     digitalWrite(pin, LOW);
 }
 
@@ -150,22 +205,22 @@ void print_sensor_reading_diff(SensorReadingDiff *diff) {
   Serial.println(diff->norm.b);
 }
 
-void sensor_loop() {
-//  reading_count += 1;
-//  Serial.print(reading_count);
-//  Serial.print(F("\tAssay"));
-//  digitalWrite(pinControlSensor, LOW);
-//  delay(100);
-//  get_one_sensor_reading(&assayBaseline);
-//  digitalWrite(pinControlSensor, HIGH);
-//  delay(100);
-//  Serial.print(reading_count);
-//  Serial.print(F("\tControl"));
-//  digitalWrite(pinAssaySensor, LOW);
-//  delay(100);
-//  get_one_sensor_reading(&controlBaseline);
-//  digitalWrite(pinAssaySensor, HIGH);
-//  delay(100);
+void loop() {
+  reading_count += 1;
+  Serial.print(reading_count);
+  Serial.print(F("\tAssay"));
+  digitalWrite(pinAssaySensor, HIGH);
+  delay(100);
+  get_one_sensor_reading(&assayBaseline);
+  digitalWrite(pinAssaySensor, LOW);
+  delay(100);
+  Serial.print(reading_count);
+  Serial.print(F("\tControl"));
+  digitalWrite(pinControlSensor, HIGH);
+  delay(100);
+  get_one_sensor_reading(&controlBaseline);
+  digitalWrite(pinControlSensor, LOW);
+  delay(100);
 }
 
 void diff_reading_from_baseline(SensorReadingDiff *diff, SensorReading *reading, SensorReading *baseline) {
@@ -191,17 +246,4 @@ void get_one_sensor_reading(SensorReading *baseline) {
   
 //  diff_reading_from_baseline(&diff, &data, baseline);
 //  print_sensor_reading_diff(&diff);
-}
-
-void get_sensor_readings() {
-  
-}
-
-void calibrate_sensors() {
-  Serial.println(F("Assay sensor baseline:"));
-//  get_baseline_sensor_reading(pinAssaySensor, &assayBaseline);
-  Serial.println(F("Control sensor baseline:"));
-//  get_baseline_sensor_reading(pinControlSensor, &controlBaseline);
-  Serial.println(F("Baseline readings complete."));
-  move_mm(50.0);
 }

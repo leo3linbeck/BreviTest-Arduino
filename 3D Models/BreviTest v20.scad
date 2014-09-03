@@ -165,34 +165,60 @@ if (render_platform) {
 	// platform sides
 	color(platform_color) {
 		translate([0,  (platform_width - platform_side_width) / 2, platform_height + platform_side_height / 2])
+		difference() {
 			cube([platform_side_length, platform_side_width, platform_side_height], center = true);
+			translate([0, platform_side_width / 2 - 0.5, (platform_side_height - platform_rail_height) / 2]) cube([platform_side_length, 1, 5], center = true);
+			translate([platform_side_length / 2 - 0.5, 0, (platform_side_height - platform_rail_height) / 2]) cube([1, platform_side_width, 5], center = true);
+			translate([-platform_side_length / 2 + 0.5, 0, (platform_side_height - platform_rail_height) / 2]) cube([1, platform_side_width, 5], center = true);
+		}
 	}
 	
 	color(platform_color) {
 		translate([0, -(platform_width - platform_side_width) / 2, platform_height + platform_side_height / 2])
+		difference() {
 			cube([platform_side_length, platform_side_width, platform_side_height], center = true);
+			translate([0, -platform_side_width / 2 + 0.5, (platform_side_height - platform_rail_height) / 2]) cube([platform_side_length, 1, 5], center = true);
+			translate([platform_side_length / 2 - 0.5, 0, (platform_side_height - platform_rail_height) / 2]) cube([1, platform_side_width, 5], center = true);
+			translate([-platform_side_length / 2 + 0.5, 0, (platform_side_height - platform_rail_height) / 2]) cube([1, platform_side_width, 5], center = true);
+		}
 	}
 	
 	// platform rails
 	color(platform_color) {
 		translate([-(platform_side_length - platform_rail_length) / 2 + platform_bumper_length, ((platform_width - platform_rail_width) / 2 - platform_side_width), platform_height + platform_side_height - platform_rail_height / 2])
+		difference() {
 			cube([platform_rail_length, platform_rail_width, platform_rail_height], center = true);
+			translate([0, -platform_rail_width / 2 + 0.5, 0]) cube([platform_rail_length, 1, 5], center = true);
+			translate([platform_rail_length / 2 - 0.5, 0, 0]) cube([1, platform_rail_width, 5], center = true);
+		}
 	}
 	
 	color(platform_color) {
 		translate([-(platform_side_length - platform_rail_length) / 2 + platform_bumper_length,  -((platform_width - platform_rail_width) / 2 - platform_side_width), platform_height + platform_side_height - platform_rail_height / 2])
+		difference() {
 			cube([platform_rail_length, platform_rail_width, platform_rail_height], center = true);
+			translate([0, platform_rail_width / 2 - 0.5, 0]) cube([platform_rail_length, 1, 5], center = true);
+			translate([platform_rail_length / 2 - 0.5, 0, 0]) cube([1, platform_rail_width, 5], center = true);
+		}
 	}
 	
 	// platform stage bumper
 	color(platform_color) {
 		translate([-(platform_side_length - platform_bumper_length) / 2, platform_width / 2 - platform_side_width - platform_rail_width / 2, platform_height + platform_bumper_height / 2])
+		difference() {
 			cube([platform_bumper_length, platform_rail_width, platform_bumper_height], center = true);
+			translate([0, -platform_rail_width / 2 + 0.5, (platform_bumper_height - platform_rail_height) / 2]) cube([platform_bumper_length, 1, 5], center = true);
+			translate([-platform_bumper_length / 2 + 0.5, 0, (platform_side_height - platform_rail_height) / 2]) cube([1, platform_rail_width, 5], center = true);
+		}
 	}
 	
 	color(platform_color) {
 		translate([-(platform_side_length - platform_bumper_length) / 2, -(platform_width / 2 - platform_side_width - platform_rail_width / 2), platform_height + platform_bumper_height / 2])
+		difference() {
 			cube([platform_bumper_length, platform_rail_width, platform_bumper_height], center = true);
+			translate([0, platform_rail_width / 2 - 0.5, (platform_bumper_height - platform_rail_height) / 2]) cube([platform_bumper_length, 1, 5], center = true);
+			translate([-platform_bumper_length / 2 + 0.5, 0, (platform_side_height - platform_rail_height) / 2]) cube([1, platform_rail_width, 5], center = true);
+		}
 	}
 	
 	// solenoid podium

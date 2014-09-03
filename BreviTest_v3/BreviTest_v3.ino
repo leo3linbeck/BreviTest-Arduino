@@ -12,8 +12,10 @@
 #define pinFrontLimitSwitch 6
 #define pinBackLimitSwitch 5
 
-#define pinAssaySensorVin A0
-#define pinControlSensorVin A1
+#define pinAssaySensorSDA A0
+#define pinAssaySensorSCL A1
+#define pinControlSensorSDA A2
+#define pinControlSensorSCL A3
 
 // NOTE: FORWARD and BACKWARD are reversed for the stepper motor!!!
 
@@ -44,6 +46,7 @@ int solenoidDelayAfterRaster = int(round(solenoidDelay - secsPerRaster * 1000.0)
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_StepperMotor *motor = AFMS.getStepper(stepsPerRotation, channelMotor);
 Adafruit_DCMotor *solenoid = AFMS.getMotor(channelSolenoid);
+Adafruit_TCS34725 sensor;
 
 char ssid2[] = "AlphaDev Wifi 2";     //  your network SSID (name) 
 char pass2[] = "alpha123";    // your network password
@@ -62,6 +65,80 @@ extern void run_brevitest();
 extern void read_sensors();
 extern void get_sensor_readings();
 extern void reset_x_stage();
+extern void calibrate_sensors();
+extern void move_mm(float mm);
+
+struct RawSensorReading {
+  uint16_t r;
+  uint16_t g;
+  uint16_t b;
+  uint16_t c;
+};
+
+struct SensorReading {
+  RawSensorReading raw;
+  struct norm {
+    float r;
+    float g;
+    float b;
+  } norm;
+  int colorTemp;
+  int lux;
+  
+  SensorReading() {
+    raw.r = 0;
+    raw.g = 0;
+    raw.b = 0;
+    raw.c = 0;
+    norm.r = 0;
+    norm.g = 0;
+    norm.b = 0;
+    colorTemp = 0;
+    lux = 0;
+  }
+};
+
+struct SensorReadingDiff {
+  struct raw {
+    int r;
+    int g;
+    int b;
+    int c;
+  } raw;
+  
+  struct norm {
+    float r;
+    float g;
+    float b;
+  } norm;
+  
+  SensorReadingDiff() {
+    raw.r = 0;
+    raw.g = 0;
+    raw.b = 0;
+    raw.c = 0;
+    
+    norm.r = 0;
+    norm.g = 0;
+    norm.b = 0;
+  }
+};
+
+struct SensorSample {
+  long r;
+  long g;
+  long b;
+  long c;
+  int count;
+  
+  SensorSample() {
+    r = 0;
+    g = 0;
+    b = 0;
+    c = 0;
+    count = 0;
+  }
+};
 
 void setup() {
   Serial.begin(9600);
@@ -69,19 +146,20 @@ void setup() {
   delay(500);
   
   // setup sensors
-  sensor_setup();
+//  sensor_setup();
 
   // set up stepping motor and solenoid
   device_setup();
   
   // set up wifi
 //  wifi_setup();
-
-  run_brevitest();
 }
 
 void loop() {
 //  wifi_loop();
+  run_brevitest();
+//  calibrate_sensors();
+    while (true);
 }
 
 
