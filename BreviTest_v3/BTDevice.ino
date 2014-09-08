@@ -6,10 +6,13 @@ void device_setup() {
 //  Serial.println(digitalRead(pinBackLimitSwitch));
   
   Serial.println(F("Initializing motor shield"));
+  AFMS = Adafruit_MotorShield();
   AFMS.begin();
   Serial.println(F("Initializing motor"));
+  motor = AFMS.getStepper(stepsPerRotation, channelMotor);
   motor->setSpeed(rpm);
   Serial.println(F("Initializing solenoid"));
+  solenoid = AFMS.getMotor(channelSolenoid);
   solenoid->setSpeed(solenoid_power);
   
   solenoid_in();

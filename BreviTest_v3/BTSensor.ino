@@ -1,9 +1,9 @@
-void sample_sensor(SensorSample *sample, SensorReading *reading, int count);
-void get_one_sensor_reading(SensorReading *baseline);
-void average_sample(SensorSample *sample, SensorReading *reading);
+void sample_sensor(Adafruit_TCS34725 *sensor, SensorSample *sample, SensorReading *reading, int count);
+void get_one_sensor_reading(Adafruit_TCS34725 *sensor, SensorReading *baseline);
+void average_sample(Adafruit_TCS34725 *sensor, SensorSample *sample, SensorReading *reading);
 void print_sensor_reading(SensorReading *reading);
 void print_sensor_reading_diff(SensorReadingDiff *diff);
-void get_baseline_sensor_reading(int pin, SensorReading *baseline);
+void get_baseline_sensor_reading(Adafruit_TCS34725 *sensor, SensorReading *baseline);
 void normalize_sensor_reading(SensorReading *reading);
 void diff_reading_from_baseline(SensorReadingDiff *diff, SensorReading *reading, SensorReading *baseline);
 
@@ -11,44 +11,19 @@ SensorReading assayBaseline, controlBaseline;
 int reading_count = 0;
 
 void sensor_setup() {
-  Serial.println(F("Initializing sensors"));
-  
-//  digitalWrite(pinAssaySensor, HIGH);
-//  sensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
-//  Serial.println(F("Starting up assay sensor"));
-//  sensor.begin();
-//  delay(100);
-//  Serial.println(F("Turning off assay sensor LED"));
-//  sensor.setInterrupt(true);
-//  digitalWrite(pinAssaySensor, LOW);
-//  
-//  digitalWrite(pinControlSensor, HIGH);
-//  sensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
-//  Serial.println(F("Starting up control sensor"));
-//  sensor.begin();
-//  delay(100);
-//  Serial.println(F("Turning off control sensor LED"));
-//  sensor.setInterrupt(true);
-//
-//  digitalWrite(pinControlSensor, LOW);
+  Serial.println(F("Starting up assay sensor"));
+  assaySensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X, pinAssaySensorSDA, pinAssaySensorSCL);
+  assaySensor.begin();
+  delay(100);
+  Serial.println(F("Turning off assay sensor LED"));
+  assaySensor.setInterrupt(true);
 
-//  digitalWrite(pinAssaySensor, LOW);
-//  digitalWrite(pinControlSensor, LOW);
-
-//  Serial.println(F("Setting assay sensor"));
-//  digitalWrite(pinControlSensor, LOW);
-//  sensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_101MS, TCS34725_GAIN_4X);
-//  sensor.begin();
-//  delay(100);
-////  sensor.setInterrupt(true);
-//  digitalWrite(pinControlSensor, HIGH);
-//  
-//  Serial.println(F("Setting control sensor"));
-//  digitalWrite(pinAssaySensor, LOW);
-//  sensor.begin();
-//  delay(100);
-////  sensor.setInterrupt(true);
-//  digitalWrite(pinAssaySensor, HIGH);
+  Serial.println(F("Starting up control sensor"));
+  controlSensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X, pinControlSensorSDA, pinControlSensorSCL);
+  controlSensor.begin();
+  delay(100);
+  Serial.println(F("Turning off control sensor LED"));
+  controlSensor.setInterrupt(true);
 }
 
 void normalize_sensor_reading(SensorReading *reading) {
@@ -58,95 +33,89 @@ void normalize_sensor_reading(SensorReading *reading) {
   reading->norm.b = float(reading->raw.b) / d;
 }
   
-void get_baseline_sensor_reading(int pin, SensorReading *baseline) {
+void get_baseline_sensor_reading(Adafruit_TCS34725 *sensor, SensorReading *baseline) {
     SensorSample sample;
     
-    digitalWrite(pin, HIGH);
-    delay(100);
-    sensor.setInterrupt(false);
-    sample_sensor(&sample, baseline, 20);
+    Serial.println("Turn off LED");
+    sensor->setInterrupt(false);
+    Serial.println("Sample sensor");
+    sample_sensor(sensor, &sample, baseline, 20);
+    Serial.println("Normalize and print");
     normalize_sensor_reading(baseline);
     print_sensor_reading(baseline);
-    sensor.setInterrupt(true);
-
-//    if (pin == pinAssaySensor) {
-//      digitalWrite(pinControlSensor, HIGH);
-//    }
-//    else {
-//      digitalWrite(pinAssaySensor, HIGH);
-//    }
-    digitalWrite(pin, LOW);
+    Serial.println("Turn on LED");
+    sensor->setInterrupt(true);
 }
 
-void average_sample(SensorSample *sample, SensorReading *reading) {
+void average_sample(Adafruit_TCS34725 *sensor, SensorSample *sample, SensorReading *reading) {
   long c = sample->count;
   reading->raw.r = sample->r / c;
   reading->raw.g = sample->g / c;
   reading->raw.b = sample->b / c;
   reading->raw.c = sample->c / c;
-  reading->colorTemp = sensor.calculateColorTemperature(reading->raw.r, reading->raw.g, reading->raw.b);
-  reading->lux = sensor.calculateLux(reading->raw.r, reading->raw.g, reading->raw.b);
+  reading->colorTemp = sensor->calculateColorTemperature(reading->raw.r, reading->raw.g, reading->raw.b);
+  reading->lux = sensor->calculateLux(reading->raw.r, reading->raw.g, reading->raw.b);
 }
 
-void sample_sensor(SensorSample *sample, SensorReading *reading, int count) {
+void sample_sensor(Adafruit_TCS34725 *sensor, SensorSample *sample, SensorReading *reading, int count) {
   RawSensorReading data;
 
   for (int i = 0; i < 3; i += 1) {  // throw away first few readings
-    sensor.getRawData(&data.r, &data.g, &data.b, &data.c);
+    sensor->getRawData(&data.r, &data.g, &data.b, &data.c);
   }
   
   for (sample->count = 0; sample->count < count; sample->count += 1) {
-    sensor.getRawData(&data.r, &data.g, &data.b, &data.c);
+    sensor->getRawData(&data.r, &data.g, &data.b, &data.c);
     sample->r += data.r;
     sample->g += data.g;
     sample->b += data.b;
     sample->c += data.c;
   }
 
-  average_sample(sample, reading);
+  average_sample(sensor, sample, reading);
 }
 
 void print_sensor_reading(SensorReading *reading) {
-  Serial.print("\tRaw->");
-  Serial.print("\tRed: ");
+  Serial.print(F("\tRaw->"));
+  Serial.print(F("\tRed: "));
   Serial.print(reading->raw.r);
-  Serial.print("\tGreen: ");
+  Serial.print(F("\tGreen: "));
   Serial.print(reading->raw.g);
-  Serial.print("\tBlue: ");
+  Serial.print(F("\tBlue: "));
   Serial.print(reading->raw.b);
-  Serial.print("\tClear: ");
+  Serial.print(F("\tClear: "));
   Serial.print(reading->raw.c);
-  Serial.print("\tTemp : ");
+  Serial.print(F("\tTemp : "));
   Serial.print(reading->colorTemp);
-  Serial.print("\tLux: ");
+  Serial.print(F("\tLux: "));
   Serial.println(reading->lux);
   
-//  Serial.print("Norm-> ");
-//  Serial.print("  Red: ");
+//  Serial.print(F("Norm-> "));
+//  Serial.print(F("  Red: "));
 //  Serial.print(reading->norm.r);
-//  Serial.print("  Green: ");
+//  Serial.print(F("  Green: "));
 //  Serial.print(reading->norm.g);
-//  Serial.print("  Blue: ");
+//  Serial.print(F("  Blue: "));
 //  Serial.println(reading->norm.b);
 }
 
 void print_sensor_reading_diff(SensorReadingDiff *diff) {
-  Serial.print("Diff Raw-> ");
-  Serial.print("  Red: ");
+  Serial.print(F("Diff Raw-> "));
+  Serial.print(F("  Red: "));
   Serial.print(diff->raw.r);
-  Serial.print("  Green: ");
+  Serial.print(F("  Green: "));
   Serial.print(diff->raw.g);
-  Serial.print("  Blue: ");
+  Serial.print(F("  Blue: "));
   Serial.print(diff->raw.b);
-  Serial.print("  Clear: ");
+  Serial.print(F("  Clear: "));
   Serial.println(diff->raw.c);
 
-  Serial.print("Diff Norm-> ");
-  Serial.print("  Red: ");
+  Serial.print(F("Diff Norm-> "));
+  Serial.print(F("  Red: "));
   Serial.print(diff->norm.r);
-  Serial.print("  Green: ");
+  Serial.print(F("  Green: "));
   Serial.print(diff->norm.g);
-  Serial.print("  Blue: ");
+  Serial.print(F("  Blue: "));
   Serial.println(diff->norm.b);
 }
 
@@ -156,14 +125,14 @@ void sensor_loop() {
 //  Serial.print(F("\tAssay"));
 //  digitalWrite(pinControlSensor, LOW);
 //  delay(100);
-//  get_one_sensor_reading(&assayBaseline);
+//  get_one_sensor_reading(&assaySensor, &assayBaseline);
 //  digitalWrite(pinControlSensor, HIGH);
 //  delay(100);
 //  Serial.print(reading_count);
 //  Serial.print(F("\tControl"));
 //  digitalWrite(pinAssaySensor, LOW);
 //  delay(100);
-//  get_one_sensor_reading(&controlBaseline);
+//  get_one_sensor_reading(&controlSensor, &controlBaseline);
 //  digitalWrite(pinAssaySensor, HIGH);
 //  delay(100);
 }
@@ -179,13 +148,13 @@ void diff_reading_from_baseline(SensorReadingDiff *diff, SensorReading *reading,
   diff->norm.b = reading->norm.b - baseline->norm.b;
 }
 
-void get_one_sensor_reading(SensorReading *baseline) {
+void get_one_sensor_reading(Adafruit_TCS34725 *sensor, SensorReading *baseline) {
   SensorReadingDiff diff;
   SensorReading data;
   
-  sensor.getRawData(&data.raw.r, &data.raw.g, &data.raw.b, &data.raw.c);
-  data.colorTemp = sensor.calculateColorTemperature(data.raw.r, data.raw.g, data.raw.b);
-  data.lux = sensor.calculateLux(data.raw.r, data.raw.g, data.raw.b);
+  sensor->getRawData(&data.raw.r, &data.raw.g, &data.raw.b, &data.raw.c);
+  data.colorTemp = sensor->calculateColorTemperature(data.raw.r, data.raw.g, data.raw.b);
+  data.lux = sensor->calculateLux(data.raw.r, data.raw.g, data.raw.b);
 //  normalize_sensor_reading(&data);
   print_sensor_reading(&data);
   
@@ -194,14 +163,17 @@ void get_one_sensor_reading(SensorReading *baseline) {
 }
 
 void get_sensor_readings() {
-  
+  get_one_sensor_reading(&assaySensor, &assayBaseline);
+  delay(1000);
+  get_one_sensor_reading(&controlSensor, &controlBaseline);
+  delay(1000);
 }
 
 void calibrate_sensors() {
   Serial.println(F("Assay sensor baseline:"));
-//  get_baseline_sensor_reading(pinAssaySensor, &assayBaseline);
+  get_baseline_sensor_reading(&assaySensor, &assayBaseline);
   Serial.println(F("Control sensor baseline:"));
-//  get_baseline_sensor_reading(pinControlSensor, &controlBaseline);
+  get_baseline_sensor_reading(&controlSensor, &controlBaseline);
   Serial.println(F("Baseline readings complete."));
-  move_mm(50.0);
+//  move_mm(50.0);
 }

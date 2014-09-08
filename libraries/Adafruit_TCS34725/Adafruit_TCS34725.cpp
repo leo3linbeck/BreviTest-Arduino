@@ -13,13 +13,19 @@
     @section  HISTORY
 
     v1.0 - First release
+    
+    Modifications by Leo Linbeck III to use SoftI2CMaster library
+    to allow multiple sensors to be used with the same I2C address
+    by using different SCL and SDA pins for each sensor
 */
 /**************************************************************************/
+#include <Arduino.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
 #include <stdlib.h>
 #include <math.h>
 
+#include "utility/SoftI2CMaster.h"
 #include "Adafruit_TCS34725.h"
 
 /*========================================================================*/
@@ -43,15 +49,12 @@ float powf(const float x, const float y)
 /**************************************************************************/
 void Adafruit_TCS34725::write8 (uint8_t reg, uint32_t value)
 {
-  Wire.beginTransmission(TCS34725_ADDRESS);
-  #if ARDUINO >= 100
-  Wire.write(TCS34725_COMMAND_BIT | reg);
-  Wire.write(value & 0xFF);
-  #else
-  Wire.send(TCS34725_COMMAND_BIT | reg);
-  Wire.send(value & 0xFF);
-  #endif
-  Wire.endTransmission();
+	uint8_t res;
+
+  _i2c.beginTransmission(TCS34725_ADDRESS);
+  res = _i2c.write(TCS34725_COMMAND_BIT | reg);
+  res = _i2c.write((uint8_t) (value & 0xFF));
+  _i2c.endTransmission();
 }
 
 /**************************************************************************/
@@ -61,20 +64,16 @@ void Adafruit_TCS34725::write8 (uint8_t reg, uint32_t value)
 /**************************************************************************/
 uint8_t Adafruit_TCS34725::read8(uint8_t reg)
 {
-  Wire.beginTransmission(TCS34725_ADDRESS);
-  #if ARDUINO >= 100
-  Wire.write(TCS34725_COMMAND_BIT | reg);
-  #else
-  Wire.send(TCS34725_COMMAND_BIT | reg);
-  #endif
-  Wire.endTransmission();
+  uint16_t res;
+  
+  _i2c.beginTransmission(TCS34725_ADDRESS);
+  _i2c.write((uint8_t) TCS34725_COMMAND_BIT | reg);
+  _i2c.endTransmission();
 
-  Wire.requestFrom(TCS34725_ADDRESS, 1);
-  #if ARDUINO >= 100
-  return Wire.read();
-  #else
-  return Wire.receive();
-  #endif
+  _i2c.requestFrom(TCS34725_ADDRESS);
+  res = _i2c.readLast();
+  _i2c.endTransmission();
+  return res;
 }
 
 /**************************************************************************/
@@ -86,22 +85,14 @@ uint16_t Adafruit_TCS34725::read16(uint8_t reg)
 {
   uint16_t x; uint16_t t;
 
-  Wire.beginTransmission(TCS34725_ADDRESS);
-  #if ARDUINO >= 100
-  Wire.write(TCS34725_COMMAND_BIT | reg);
-  #else
-  Wire.send(TCS34725_COMMAND_BIT | reg);
-  #endif
-  Wire.endTransmission();
+  _i2c.beginTransmission(TCS34725_ADDRESS);
+  _i2c.write((uint8_t) TCS34725_COMMAND_BIT | reg);
+  _i2c.endTransmission();
 
-  Wire.requestFrom(TCS34725_ADDRESS, 2);
-  #if ARDUINO >= 100
-  t = Wire.read();
-  x = Wire.read();
-  #else
-  t = Wire.receive();
-  x = Wire.receive();
-  #endif
+  _i2c.requestFrom(TCS34725_ADDRESS);
+  t = _i2c.read();
+  x = _i2c.readLast();
+  _i2c.endTransmission();
   x <<= 8;
   x |= t;
   return x;
@@ -114,8 +105,10 @@ uint16_t Adafruit_TCS34725::read16(uint8_t reg)
 /**************************************************************************/
 void Adafruit_TCS34725::enable(void)
 {
+  //Serial.println("Power On");
   write8(TCS34725_ENABLE, TCS34725_ENABLE_PON);
   delay(3);
+  //Serial.println("RGBC Enable");
   write8(TCS34725_ENABLE, TCS34725_ENABLE_PON | TCS34725_ENABLE_AEN);  
 }
 
@@ -141,11 +134,18 @@ void Adafruit_TCS34725::disable(void)
     Constructor
 */
 /**************************************************************************/
-Adafruit_TCS34725::Adafruit_TCS34725(tcs34725IntegrationTime_t it, tcs34725Gain_t gain) 
+Adafruit_TCS34725::Adafruit_TCS34725() {
+
+}
+ 
+Adafruit_TCS34725::Adafruit_TCS34725(tcs34725IntegrationTime_t it, tcs34725Gain_t gain, uint8_t sdaPin, uint8_t sclPin) 
 {
   _tcs34725Initialised = false;
   _tcs34725IntegrationTime = it;
   _tcs34725Gain = gain;
+  _sdaPin = sdaPin;
+  _sclPin = sclPin;
+  _i2c = SoftI2CMaster(sdaPin, sclPin);
 }
 
 /*========================================================================*/
@@ -158,13 +158,12 @@ Adafruit_TCS34725::Adafruit_TCS34725(tcs34725IntegrationTime_t it, tcs34725Gain_
     doing anything else)
 */
 /**************************************************************************/
-boolean Adafruit_TCS34725::begin(void) 
+bool Adafruit_TCS34725::begin(void) 
 {
-  Wire.begin();
-  
   /* Make sure we're actually connected */
+  Serial.println("Reading sensor address");
   uint8_t x = read8(TCS34725_ID);
-//  Serial.println(x, HEX);
+  Serial.println(x, HEX);
   if (x != 0x44)
   {
     return false;
@@ -172,10 +171,13 @@ boolean Adafruit_TCS34725::begin(void)
   _tcs34725Initialised = true;
 
   /* Set default integration time and gain */
+  Serial.println("Setting integration time");
   setIntegrationTime(_tcs34725IntegrationTime);
+  Serial.println("Setting gain");
   setGain(_tcs34725Gain);
 
   /* Note: by default, the device is in power down mode on bootup */
+  Serial.println("Enabling sensor");
   enable();
 
   return true;
@@ -304,24 +306,25 @@ uint16_t Adafruit_TCS34725::calculateLux(uint16_t r, uint16_t g, uint16_t b)
 }
 
 
-void Adafruit_TCS34725::setInterrupt(boolean i) {
+void Adafruit_TCS34725::setInterrupt(bool flag) {
+  //Serial.println("setInterrupt: reading r");
   uint8_t r = read8(TCS34725_ENABLE);
-  if (i) {
+  //Serial.print("setInterrupt: r = ");
+  //Serial.println(r);
+  if (flag) {
     r |= TCS34725_ENABLE_AIEN;
   } else {
     r &= ~TCS34725_ENABLE_AIEN;
   }
+  //Serial.print("r2 = ");
+  //Serial.println(r);
   write8(TCS34725_ENABLE, r);
 }
 
 void Adafruit_TCS34725::clearInterrupt(void) {
-  Wire.beginTransmission(TCS34725_ADDRESS);
-  #if ARDUINO >= 100
-  Wire.write(0x66);
-  #else
-  Wire.send(0x66);
-  #endif
-  Wire.endTransmission();
+  _i2c.beginTransmission(TCS34725_ADDRESS);
+  _i2c.write(0x66);
+  _i2c.endTransmission();
 }
 
 
