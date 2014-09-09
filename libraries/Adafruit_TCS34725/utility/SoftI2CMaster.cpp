@@ -95,30 +95,42 @@ void SoftI2CMaster::setPins(uint8_t sdaPin, uint8_t sclPin, uint8_t pullups)
 //
 //
 //
-uint8_t SoftI2CMaster::beginTransmission(uint8_t address)
+
+uint8_t SoftI2CMaster::beginWriteTransmission(uint8_t address, uint8_t reg)
 {
+    uint8_t rc;
+    
     i2c_start();
-    uint8_t rc = i2c_write((address<<1) | 0); // clr read bit
+    
+    rc = i2c_write((address<<1) | 0); // clr read bit
+    rc = i2c_write(reg);
+	
     return rc;
 }
 
-//
-uint8_t SoftI2CMaster::requestFrom(uint8_t address)
+uint8_t SoftI2CMaster::beginWriteTransmission(int address, uint8_t reg)
 {
-    i2c_start();
-    uint8_t rc = i2c_write((address<<1) | 1); // set read bit
-    return rc;
-}
-//
-uint8_t SoftI2CMaster::requestFrom(int address)
-{
-    return requestFrom( (uint8_t) address);
+    return beginWriteTransmission((uint8_t) address, reg);
 }
 
-//
-uint8_t SoftI2CMaster::beginTransmission(int address)
+uint8_t SoftI2CMaster::beginReadTransmission(uint8_t address, uint8_t reg)
 {
-    return beginTransmission((uint8_t)address);
+    uint8_t rc;
+
+    i2c_start();
+    
+    rc = i2c_write((address<<1) | 0); // clr read bit
+    rc = i2c_write(reg);
+    
+	i2c_start();
+    rc = i2c_write((address<<1) | 1); // set read bit
+	
+    return rc;
+}
+
+uint8_t SoftI2CMaster::beginReadTransmission(int address,  uint8_t reg)
+{
+    return beginReadTransmission( (uint8_t) address, reg);
 }
 
 //
@@ -165,7 +177,25 @@ uint8_t SoftI2CMaster::write(int data)
     return write((uint8_t)data);
 }
 
-//--------------------------------------------------------------------
+// FIXME: this isn't right, surely
+uint8_t SoftI2CMaster::read( uint8_t ack )
+{
+  return i2c_read( ack );
+}
+
+//
+uint8_t SoftI2CMaster::read()
+{
+    return i2c_read( I2C_ACK );
+}
+
+//
+uint8_t SoftI2CMaster::readLast()
+{
+    return i2c_read( I2C_NAK );
+}
+
+//------ PRIVATE METHODS --------------------------------------------
 
 
 void SoftI2CMaster::i2c_writebit( uint8_t c )
@@ -191,8 +221,13 @@ void SoftI2CMaster::i2c_writebit( uint8_t c )
 //
 uint8_t SoftI2CMaster::i2c_readbit(void)
 {
+    volatile uint8_t* sclReg = portInputRegister(digitalPinToPort(_sclPin));
+    
     i2c_sda_hi();
-    i2c_scl_hi();
+    do {
+    	i2c_scl_hi();
+    } while (*sclReg == 0);
+    
     _delay_us(i2cbitdelay);
 
     uint8_t port = digitalPinToPort(_sdaPin);
@@ -236,27 +271,6 @@ void SoftI2CMaster::i2c_start(void)
     _delay_us(i2cbitdelay);
 }
 
-void SoftI2CMaster::i2c_repstart(void)
-{
-    // set both to high at the same time (releases drive on both lines)
-    //I2C_DDR &=~ (_BV( I2C_SDA ) | _BV( I2C_SCL ));
-    //*_sclDirReg &=~ (_sdaBitMask | _sclBitMask);
-    i2c_sda_hi();
-    i2c_scl_hi();
-
-    i2c_scl_lo();                           // force SCL low
-    _delay_us(i2cbitdelay);
-
-    i2c_sda_release();                      // release SDA
-    _delay_us(i2cbitdelay);
-
-    i2c_scl_release();                      // release SCL
-    _delay_us(i2cbitdelay);
-
-    i2c_sda_lo();                           // force SDA low
-    _delay_us(i2cbitdelay);
-}
-
 // Send a STOP Condition
 //
 void SoftI2CMaster::i2c_stop(void)
@@ -276,7 +290,6 @@ uint8_t SoftI2CMaster::i2c_write( uint8_t c )
         i2c_writebit( c & 128 );
         c<<=1;
     }
-
     return i2c_readbit();
 }
 
@@ -299,22 +312,4 @@ uint8_t SoftI2CMaster::i2c_read( uint8_t ack )
     _delay_us(i2cbitdelay);
 
     return res;
-}
-
-// FIXME: this isn't right, surely
-uint8_t SoftI2CMaster::read( uint8_t ack )
-{
-  return i2c_read( ack );
-}
-
-//
-uint8_t SoftI2CMaster::read()
-{
-    return i2c_read( I2C_ACK );
-}
-
-//
-uint8_t SoftI2CMaster::readLast()
-{
-    return i2c_read( I2C_NAK );
 }

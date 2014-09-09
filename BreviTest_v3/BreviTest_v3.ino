@@ -68,6 +68,7 @@ extern void get_sensor_readings();
 extern void reset_x_stage();
 extern void calibrate_sensors();
 extern void move_mm(float mm);
+extern void test_sensors();
 
 struct RawSensorReading {
   uint16_t r;
@@ -159,7 +160,8 @@ void setup() {
 
 void loop() {
 //  wifi_loop();
-  run_brevitest();
+//  run_brevitest();
+  test_sensors();
   delay(1000);
 //    while (true);
 }
