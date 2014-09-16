@@ -125,10 +125,12 @@ class Adafruit_TCS34725 {
   uint8_t  	read8 (uint8_t reg);
   uint16_t 	read16 (uint8_t reg);
   void 		setInterrupt(bool flag);
-//   void 		clearInterrupt(void);
+  void 		clearInterrupt(void);
   void 		setIntLimits(uint16_t l, uint16_t h);
   void     	enable(void);
   void     	disable(void);
+  void     	startReading(bool useLED);
+  void     	endReading(void);
 
  private:
   bool _tcs34725Initialised;

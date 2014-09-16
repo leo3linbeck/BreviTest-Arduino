@@ -90,6 +90,7 @@ void SoftI2CMaster::setPins(uint8_t sdaPin, uint8_t sclPin, uint8_t pullups)
     port = digitalPinToPort(sclPin);
     _sclPortReg  = portOutputRegister(port);
     _sclDirReg   = portModeRegister(port);
+    _sclInputReg = portInputRegister(port);
 }
 
 //
@@ -140,6 +141,7 @@ uint8_t SoftI2CMaster::endTransmission(void)
 {
     i2c_stop();
     //return ret;  // FIXME
+
     return 0;
 }
 
@@ -198,48 +200,7 @@ uint8_t SoftI2CMaster::readLast()
 //------ PRIVATE METHODS --------------------------------------------
 
 
-void SoftI2CMaster::i2c_writebit( uint8_t c )
-{
-    if ( c > 0 ) {
-        i2c_sda_hi();
-    } else {
-        i2c_sda_lo();
-    }
-
-    i2c_scl_hi();
-    _delay_us(i2cbitdelay);
-
-    i2c_scl_lo();
-    _delay_us(i2cbitdelay);
-
-    if ( c > 0 ) {
-        i2c_sda_lo();
-    }
-    _delay_us(i2cbitdelay);
-}
-
 //
-uint8_t SoftI2CMaster::i2c_readbit(void)
-{
-    volatile uint8_t* sclReg = portInputRegister(digitalPinToPort(_sclPin));
-    
-    i2c_sda_hi();
-    do {
-    	i2c_scl_hi();
-    } while (*sclReg == 0);
-    
-    _delay_us(i2cbitdelay);
-
-    uint8_t port = digitalPinToPort(_sdaPin);
-    volatile uint8_t* pinReg = portInputRegister(port);
-    uint8_t c = *pinReg;  // I2C_PIN;
-
-    i2c_scl_lo();
-    _delay_us(i2cbitdelay);
-
-    return ( c & _sdaBitMask) ? 1 : 0;
-}
-
 // Inits bitbanging port, must be called before using the functions below
 //
 void SoftI2CMaster::i2c_init(void)
@@ -259,9 +220,9 @@ void SoftI2CMaster::i2c_start(void)
     // set both to high at the same time
     //I2C_DDR &=~ (_BV( I2C_SDA ) | _BV( I2C_SCL ));
     //*_sclDirReg &=~ (_sdaBitMask | _sclBitMask);
+
     i2c_sda_hi();
     i2c_scl_hi();
-
     _delay_us(i2cbitdelay);
    
     i2c_sda_lo();
@@ -284,6 +245,27 @@ void SoftI2CMaster::i2c_stop(void)
 
 // write a byte to the I2C slave device
 //
+void SoftI2CMaster::i2c_writebit( uint8_t c )
+{	
+    if ( c > 0 ) {
+        i2c_sda_hi();
+    } else {
+        i2c_sda_lo();
+    }
+    _delay_us(i2cbitdelay);
+
+    i2c_scl_hi();
+    _delay_us(i2cbitdelay);
+
+    i2c_scl_lo();
+    _delay_us(i2cbitdelay);
+
+    if ( c > 0 ) {
+        i2c_sda_lo();
+    }
+    _delay_us(i2cbitdelay);
+}
+
 uint8_t SoftI2CMaster::i2c_write( uint8_t c )
 {
     for ( uint8_t i=0;i<8;i++) {
@@ -295,6 +277,25 @@ uint8_t SoftI2CMaster::i2c_write( uint8_t c )
 
 // read a byte from the I2C slave device
 //
+uint8_t SoftI2CMaster::i2c_readbit(void)
+{
+    i2c_sda_hi();
+    _delay_us(i2cbitdelay);
+    do {
+	    i2c_scl_hi();
+	} while (*_sclInputReg == 0);
+    _delay_us(i2cbitdelay);
+
+    uint8_t port = digitalPinToPort(_sdaPin);
+    volatile uint8_t* pinReg = portInputRegister(port);
+    uint8_t c = *pinReg;  // I2C_PIN;
+
+    i2c_scl_lo();
+    _delay_us(i2cbitdelay);
+
+    return ( c & _sdaBitMask) ? 1 : 0;
+}
+
 uint8_t SoftI2CMaster::i2c_read( uint8_t ack )
 {
     uint8_t res = 0;

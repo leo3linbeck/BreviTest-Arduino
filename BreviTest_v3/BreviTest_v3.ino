@@ -12,10 +12,10 @@
 #define pinFrontLimitSwitch 6
 #define pinBackLimitSwitch 5
 
-#define pinControlSensorSDA A0
-#define pinControlSensorSCL A1
-#define pinAssaySensorSDA A2
-#define pinAssaySensorSCL A3
+#define pinAssaySensorSDA A0
+#define pinAssaySensorSCL A1
+#define pinControlSensorSDA A2
+#define pinControlSensorSCL A3
 
 // NOTE: FORWARD and BACKWARD are reversed for the stepper motor!!!
 
@@ -32,7 +32,7 @@
 #define number_of_sensor_readings 10
 #define delay_between_sensor_readings 500
 
-#define solenoid_power 190
+#define solenoid_power 255
 
 double rps = rpm / 60.0;
 double mmPerSec = mmPerRotation * rps;
@@ -46,8 +46,6 @@ int solenoidDelayAfterRaster = int(round(solenoidDelay - secsPerRaster * 1000.0)
 Adafruit_MotorShield AFMS;
 Adafruit_StepperMotor *motor;
 Adafruit_DCMotor *solenoid;
-Adafruit_TCS34725 assaySensor;
-Adafruit_TCS34725 controlSensor;
 
 char ssid2[] = "AlphaDev Wifi 2";     //  your network SSID (name) 
 char pass2[] = "alpha123";    // your network password
@@ -86,6 +84,7 @@ struct SensorReading {
   } norm;
   int colorTemp;
   int lux;
+  int count;
   
   SensorReading() {
     raw.r = 0;
@@ -97,6 +96,7 @@ struct SensorReading {
     norm.b = 0;
     colorTemp = 0;
     lux = 0;
+    count = 0;
   }
 };
 
@@ -149,11 +149,13 @@ void setup() {
   
   // setup sensors
   sensor_setup();
-  calibrate_sensors();
+//  calibrate_sensors();
 
   // set up stepping motor and solenoid
   device_setup();
   
+  test_sensors();
+
   // set up wifi
 //  wifi_setup();
 }
@@ -161,8 +163,7 @@ void setup() {
 void loop() {
 //  wifi_loop();
 //  run_brevitest();
-  test_sensors();
-  delay(1000);
+//  delay(10000);
 //    while (true);
 }
 

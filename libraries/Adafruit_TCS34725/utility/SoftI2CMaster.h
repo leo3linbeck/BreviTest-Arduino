@@ -26,6 +26,7 @@ private:
   volatile uint8_t *_sclPortReg;
   volatile uint8_t *_sdaDirReg;
   volatile uint8_t *_sclDirReg;
+  volatile uint8_t *_sclInputReg;
 
   uint8_t usePullups;
   

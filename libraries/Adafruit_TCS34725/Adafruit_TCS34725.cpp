@@ -153,7 +153,7 @@ bool Adafruit_TCS34725::begin(void)
   /* Make sure we're actually connected */
 //  Serial.print("Sensor address: ");
   uint8_t x = read8(TCS34725_ID);
-//  Serial.println(x, HEX);
+  Serial.println(x, HEX);
   if (x != 0x44)
   {
     return false;
@@ -294,21 +294,59 @@ uint16_t Adafruit_TCS34725::calculateLux(uint16_t r, uint16_t g, uint16_t b)
 
 
 void Adafruit_TCS34725::setInterrupt(bool flag) {
-  uint8_t r = read8(TCS34725_ENABLE);
+//   uint8_t r = read8(TCS34725_ENABLE);
+//   if (flag) {
+//     r |= TCS34725_ENABLE_AIEN;
+//   } else {
+//     r &= ~TCS34725_ENABLE_AIEN;
+//   }
+//   write8(TCS34725_ENABLE, r);
   if (flag) {
-    r |= TCS34725_ENABLE_AIEN;
-  } else {
-    r &= ~TCS34725_ENABLE_AIEN;
+     write8(TCS34725_ENABLE, 0x11);
+  	 delay(10);
+     write8(TCS34725_ENABLE, 0x13);
   }
-  write8(TCS34725_ENABLE, r);
+  else {
+     write8(TCS34725_ENABLE, 0x01);
+  	 delay(10);
+     write8(TCS34725_ENABLE, 0x03);
+  }
 }
 
-// void Adafruit_TCS34725::clearInterrupt(void) {
-//   _i2c.beginWriteTransmission(TCS34725_ADDRESS);
-//   _i2c.write(0x66);
-//   _i2c.endTransmission();
-// }
-// 
+void Adafruit_TCS34725::startReading(bool useLED) {
+  uint8_t r;
+  
+  if (useLED) {
+	 do {
+     	write8(TCS34725_ENABLE, 0x01);
+  	 	delay(10);
+     	write8(TCS34725_ENABLE, 0x03);
+	 	r = read8(TCS34725_ENABLE);
+	 } while (r != 0x03);
+  }
+  else {
+	 do {
+     	write8(TCS34725_ENABLE, 0x11);
+  	 	delay(10);
+     	write8(TCS34725_ENABLE, 0x13);
+	 	r = read8(TCS34725_ENABLE);
+	 } while (r != 0x13);
+  }
+}
+
+void Adafruit_TCS34725::endReading(void) {
+	uint8_t r;
+  
+	do {
+		write8(TCS34725_ENABLE, 0x11);
+	 	r = read8(TCS34725_ENABLE);
+	} while (r != 0x11);
+}
+
+void Adafruit_TCS34725::clearInterrupt(void) {
+	write8(TCS34725_ADDRESS, 0x66);
+}
+ 
 
 void Adafruit_TCS34725::setIntLimits(uint16_t low, uint16_t high) {
    write8(0x04, low & 0xFF);
