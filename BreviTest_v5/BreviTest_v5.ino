@@ -1,7 +1,14 @@
+
 #include <Wire.h>
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <WiFiServer.h>
+
+#include <Base64.h>
+#include <global.h>
+#include <MD5.h>
+#include <sha1.h>
+#include <WebSocketClient.h>
+
 #include "Adafruit_TCS34725.h"
 #include "Adafruit_MotorShield.h"
 #include "utility/Adafruit_PWMServoDriver.h"
@@ -32,7 +39,9 @@
 #define number_of_sensor_readings 10
 #define delay_between_sensor_readings 500
 
-#define solenoid_power 255
+#define solenoid_sustain_power 15
+#define solenoid_surge_power 255
+#define solenoid_surge_period 80
 
 double rps = rpm / 60.0;
 double mmPerSec = mmPerRotation * rps;
@@ -47,14 +56,19 @@ Adafruit_MotorShield AFMS;
 Adafruit_StepperMotor *motor;
 Adafruit_DCMotor *solenoid;
 
+#define HELLO_INTERVAL 3000UL
+
 char ssid2[] = "AlphaDev Wifi 2";     //  your network SSID (name) 
 char pass2[] = "alpha123";    // your network password
 char ssid[] = "Linbeck Home";     //  your network SSID (name) 
 char pass[] = "2january88";    // your network password
+char websocketURL[] = "172.16.121.98";
 int wifi_status = WL_IDLE_STATUS;     // the Wifi radio's status
-WiFiServer server(80);
-String httpRequest;
+WiFiClient wifiClient;
+WebSocketClient websocketClient;
 IPAddress ip_address;
+
+unsigned long start_time;
 
 extern void wifi_setup();
 extern void wifi_loop();
@@ -152,19 +166,20 @@ void setup() {
 //  calibrate_sensors();
 
   // set up stepping motor and solenoid
-  device_setup();
+//  device_setup();
 
   // set up wifi
   wifi_setup();
+  
+  start_time = millis();
 }
 
 void loop() {
-//  wifi_loop();
+  wifi_loop();
 //  run_brevitest();
 //  delay(10000);
   
-    test_sensors();
-    while (true);
+//    test_sensors();
 }
 
 

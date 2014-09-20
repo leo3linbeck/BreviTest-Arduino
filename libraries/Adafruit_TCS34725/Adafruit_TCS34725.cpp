@@ -153,10 +153,11 @@ bool Adafruit_TCS34725::begin(void)
   /* Make sure we're actually connected */
 //  Serial.print("Sensor address: ");
   uint8_t x = read8(TCS34725_ID);
-  Serial.println(x, HEX);
-  if (x != 0x44)
+  while (x != 0x44)
   {
-    return false;
+  	Serial.print("Error initializing sensor: ");
+  	Serial.println(x, HEX);
+  	uint8_t x = read8(TCS34725_ID);
   }
   _tcs34725Initialised = true;
 
