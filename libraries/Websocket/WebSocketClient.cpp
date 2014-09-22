@@ -23,7 +23,8 @@ bool WebSocketClient::handshake(WiFiClient *client) {
 #endif
                 return true;
 
-        } else {
+        }
+        else {
             // Might just need to break until out of wifi_client loop.
 #ifdef DEBUGGING
             Serial.println(F("Invalid handshake"));
@@ -42,7 +43,6 @@ bool WebSocketClient::analyzeRequest() {
 
     int bite;
     bool foundupgrade = false;
-    unsigned long intkey[2];
     String serverKey = "----------------------------";
     char keyStart[17];
     char b64Key[25];
@@ -69,15 +69,14 @@ bool WebSocketClient::analyzeRequest() {
     wifi_client->print(F(" HTTP/1.1\r\n"));
     wifi_client->print(F("Upgrade: websocket\r\n"));
     wifi_client->print(F("Connection: Upgrade\r\n"));
+    wifi_client->print(F("Origin: Arduino\r\n"));
     wifi_client->print(F("Host: "));
     wifi_client->print(host);
     wifi_client->print(CRLF); 
     wifi_client->print(F("Sec-WebSocket-Key: "));
     wifi_client->print(b64Key);
     wifi_client->print(CRLF);
-//     wifi_client->print(F("Sec-WebSocket-Protocol: "));
-//     wifi_client->print(protocol);
-//     wifi_client->print(CRLF);
+//    wifi_client->print(F("Sec-WebSocket-Protocol: chat\r\n"));
     wifi_client->print(F("Sec-WebSocket-Version: 13\r\n"));
     wifi_client->print(CRLF);
 
@@ -101,17 +100,15 @@ bool WebSocketClient::analyzeRequest() {
             Serial.print(F("Got Header: "));
             Serial.print(temp);
 #endif
-            if (!foundupgrade && temp.startsWith("Upgrade: websocket")) {
-                foundupgrade = true;
-            }
-            else {
-            	if (temp.startsWith("Sec-WebSocket-Accept: ")) {
-                	serverKey = temp.substring(22, temp.length() - 2); // Don't save last CR+LF
+			if (temp.startsWith("Sec-WebSocket-Accept")) {
+				serverKey = temp.substring(22, temp.length() - 2); // Don't save last CR+LF
 #ifdef DEBUGGING
-            Serial.print(F("Server key: "));
-            Serial.println(serverKey);
+				Serial.print(F("Server key: "));
+				Serial.println(serverKey);
 #endif
-            	}
+			}
+            else if (!foundupgrade && temp.startsWith("Upgrade: websocket")) {
+                foundupgrade = true;
             }
             temp = "";		
         }
@@ -298,37 +295,38 @@ int WebSocketClient::timedRead() {
 void WebSocketClient::sendEncodedData(char *str, uint8_t opcode) {
     uint8_t mask[4];
     int size = strlen(str);
-    // Opcode; final fragment
-    wifi_client->write(opcode | WS_FIN);
-
-    // NOTE: no support for > 16-bit sized messages
-    if (size > 125) {
-        wifi_client->write(WS_SIZE16 | WS_MASK);
-        wifi_client->write((uint8_t) (size >> 8));
-        wifi_client->write((uint8_t) (size & 0xFF));
-    } else {
-        wifi_client->write((uint8_t) size | WS_MASK);
-    }
-
-    mask[0] = random(0, 256);
-    mask[1] = random(0, 256);
-    mask[2] = random(0, 256);
-    mask[3] = random(0, 256);
     
-    wifi_client->write(mask[0]);
-    wifi_client->write(mask[1]);
-    wifi_client->write(mask[2]);
-    wifi_client->write(mask[3]);
-     
-    for (int i=0; i<size; ++i) {
-        wifi_client->write(str[i] ^ mask[i % 4]);
+    if (size > 125) {
+    	Serial.println(F("String too long for sending through websocket"));
+    }
+    else {
+		// Opcode; final fragment
+		wifi_client->write(opcode | WS_FIN);
+		wifi_client->write(((uint8_t) size) | WS_MASK);
+
+		mask[0] = random(0, 256);
+		mask[1] = random(0, 256);
+		mask[2] = random(0, 256);
+		mask[3] = random(0, 256);
+	
+		wifi_client->write(mask[0]);
+		wifi_client->write(mask[1]);
+		wifi_client->write(mask[2]);
+		wifi_client->write(mask[3]);
+	 
+		for (int i=0; i<size; ++i) {
+			wifi_client->write(str[i] ^ mask[i % 4]);
+		}
     }
 }
 
 void WebSocketClient::sendEncodedData(String str, uint8_t opcode) {
     int size = str.length() + 1;
     char cstr[size];
-
+    
+// 	Serial.print("sendEncodedData: ");
+// 	Serial.println(str);
+	
     str.toCharArray(cstr, size);
 
     sendEncodedData(cstr, opcode);

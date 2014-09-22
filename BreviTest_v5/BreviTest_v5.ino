@@ -1,3 +1,6 @@
+//#define DEBUGGING
+
+#include <EEPROM.h>
 
 #include <Wire.h>
 #include <WiFi.h>
@@ -5,7 +8,6 @@
 
 #include <Base64.h>
 #include <global.h>
-#include <MD5.h>
 #include <sha1.h>
 #include <WebSocketClient.h>
 
@@ -13,62 +15,36 @@
 #include "Adafruit_MotorShield.h"
 #include "utility/Adafruit_PWMServoDriver.h"
 
-#define channelMotor 1
-#define channelSolenoid 3
-
-#define pinFrontLimitSwitch 6
-#define pinBackLimitSwitch 5
-
-#define pinAssaySensorSDA A0
-#define pinAssaySensorSCL A1
-#define pinControlSensorSDA A2
-#define pinControlSensorSCL A3
-
-// NOTE: FORWARD and BACKWARD are reversed for the stepper motor!!!
-
-#define STEP_FORWARD BACKWARD
-#define STEP_BACKWARD FORWARD
-
-#define mmPerRotation 1.0
-#define solenoidDelay 2000
-#define mmPerRaster 0.5
-#define stepsPerRotation 200
-#define rpm 200
-
-#define number_of_wells 6   // does not include microbead and color wells
-#define number_of_sensor_readings 10
-#define delay_between_sensor_readings 500
-
-#define solenoid_sustain_power 15
-#define solenoid_surge_power 255
-#define solenoid_surge_period 80
-
-double rps = rpm / 60.0;
-double mmPerSec = mmPerRotation * rps;
-double stepsPerSec = stepsPerRotation * rps;
-double delayAtFullSpeed = 1000.0 / (stepsPerRotation * rps);
-double mmPerStep = mmPerRotation / stepsPerRotation;
-int stepsPerRaster = int(round(mmPerRaster / mmPerStep));
-double secsPerRaster = stepsPerRaster / stepsPerSec;
-int solenoidDelayAfterRaster = int(round(solenoidDelay - secsPerRaster * 1000.0));
-
 Adafruit_MotorShield AFMS;
 Adafruit_StepperMotor *motor;
 Adafruit_DCMotor *solenoid;
 
-#define HELLO_INTERVAL 3000UL
+Adafruit_TCS34725 assaySensor;
+Adafruit_TCS34725 controlSensor;
 
-char ssid2[] = "AlphaDev Wifi 2";     //  your network SSID (name) 
-char pass2[] = "alpha123";    // your network password
-char ssid[] = "Linbeck Home";     //  your network SSID (name) 
-char pass[] = "2january88";    // your network password
-char websocketURL[] = "172.16.121.98";
-int wifi_status = WL_IDLE_STATUS;     // the Wifi radio's status
 WiFiClient wifiClient;
-WebSocketClient websocketClient;
-IPAddress ip_address;
+//char ssid[] = "AlphaDev Wifi 2";     //  Fannin network ID
+//char pass[] = "alpha123";    // Fannin network password
+char ssid[] = "Linbeck Home";     //  L3 network ID
+char pass[] = "2january88";    // L3 network password
+int wifi_status = WL_IDLE_STATUS;     // the Wifi radio's status
 
+WebSocketClient websocketClient;
+char websocketURL[] = "172.16.121.98";
+int websocketPort = 8081;
+char websocketPath[] = "/brevitest";
+//char websocketURL[] = "echo.websocket.org";
+//int websocketPort = 80;
+//char websocketPath[] = "/";
+
+#define PING_INTERVAL 30000UL
 unsigned long start_time;
+unsigned long last_ping;
+
+#define MAX_QUEUE_SIZE 10
+String message_queue[MAX_QUEUE_SIZE];
+int message_queue_length = 0;
+char serial_number[20];
 
 extern void wifi_setup();
 extern void wifi_loop();
@@ -79,107 +55,86 @@ extern void read_sensors();
 extern void get_sensor_readings();
 extern void reset_x_stage();
 extern void calibrate_sensors();
-extern void move_mm(float mm);
 extern void test_sensors();
+extern void move_steps();
 
-struct RawSensorReading {
-  uint16_t r;
-  uint16_t g;
-  uint16_t b;
-  uint16_t c;
-};
-
-struct SensorReading {
-  RawSensorReading raw;
-  struct norm {
-    float r;
-    float g;
-    float b;
-  } norm;
-  int colorTemp;
-  int lux;
-  int count;
-  
-  SensorReading() {
-    raw.r = 0;
-    raw.g = 0;
-    raw.b = 0;
-    raw.c = 0;
-    norm.r = 0;
-    norm.g = 0;
-    norm.b = 0;
-    colorTemp = 0;
-    lux = 0;
-    count = 0;
+void read_serial_number() {
+  for (int i = 0; i < 19; i += 1) {
+    serial_number[i] = EEPROM.read(i);
   }
-};
-
-struct SensorReadingDiff {
-  struct raw {
-    int r;
-    int g;
-    int b;
-    int c;
-  } raw;
   
-  struct norm {
-    float r;
-    float g;
-    float b;
-  } norm;
-  
-  SensorReadingDiff() {
-    raw.r = 0;
-    raw.g = 0;
-    raw.b = 0;
-    raw.c = 0;
-    
-    norm.r = 0;
-    norm.g = 0;
-    norm.b = 0;
-  }
-};
-
-struct SensorSample {
-  long r;
-  long g;
-  long b;
-  long c;
-  int count;
-  
-  SensorSample() {
-    r = 0;
-    g = 0;
-    b = 0;
-    c = 0;
-    count = 0;
-  }
-};
+  Serial.print(F("Brevitest serial number: "));
+  Serial.println(serial_number);
+}
 
 void setup() {
   Serial.begin(9600);
+  
+  delay(1000);
+  
   Serial.println(F("Serial port started"));
-  delay(500);
   
-  // setup sensors
-  sensor_setup();
-//  calibrate_sensors();
-
-  // set up stepping motor and solenoid
-//  device_setup();
-
-  // set up wifi
+  read_serial_number();
+  
   wifi_setup();
-  
+  sensor_setup();
+  device_setup();
+
   start_time = millis();
+  last_ping = 0;
+}
+
+void process_message() {
+  String msg, cmd, param;
+  unsigned int i, colon;
+  
+  msg = message_queue[0];
+  message_queue_length -= 1;
+  for (i = 0; i < message_queue_length; i += 1) {
+    message_queue[i] = message_queue[i + 1];
+  }
+  
+  colon = msg.indexOf(":");
+  cmd = msg.substring(0, colon);
+  cmd.toUpperCase();
+  cmd.trim();
+  Serial.print(F("Command: "));
+  Serial.println(cmd);
+  
+  param = msg.substring(colon + 1);
+  Serial.print(F("Parameter: "));
+  Serial.println(param);
+  
+  if (cmd == "ID") {
+    websocketClient.sendData(serial_number);
+  }
+  else if ((cmd == "INIT") || (cmd == "PONG") || (cmd == "PING") || (cmd == "ECHO")) {
+    Serial.print(F("Received: "));
+    Serial.println(msg);
+  }
+  else if (cmd == "RUN") {
+    run_brevitest();
+  }
+  else if (cmd == "RESET") {
+    reset_x_stage();
+  }
+  else if (cmd == "TEST_SENSORS") {
+    test_sensors();
+  }
+  else if (cmd == "READ_SENSORS") {
+    get_sensor_readings();
+  }
+  else {
+    Serial.println(F("Command not implemented."));
+  }
 }
 
 void loop() {
   wifi_loop();
-//  run_brevitest();
-//  delay(10000);
   
-//    test_sensors();
+  while (message_queue_length > 0) {
+    process_message();
+  }
 }
 
 
