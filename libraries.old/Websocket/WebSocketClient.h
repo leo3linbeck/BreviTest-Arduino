@@ -12,8 +12,6 @@ Copyright 2010 Oliver Smith
 Some code and concept based off of Webduino library
 Copyright 2009 Ben Combee, Ran Talbott
 
-Modifications in 2014 by Leo Linbeck III
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -55,7 +53,7 @@ http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-75
 
 // Amount of time (in ms) a user may be connected before getting disconnected 
 // for timing out (i.e. not sending any data to the server).
-#define TIMEOUT_IN_MS 60000
+#define TIMEOUT_IN_MS 10000
 
 // ACTION_SPACE is how many actions are allowed in a program. Defaults to 
 // 5 unless overwritten by user.
@@ -66,7 +64,7 @@ http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-75
 // Don't allow the client to send big frames of data. This will flood the Arduinos
 // memory and might even crash it.
 #ifndef MAX_FRAME_LENGTH
-#define MAX_FRAME_LENGTH 128
+#define MAX_FRAME_LENGTH 256
 #endif
 
 #define SIZE(array) (sizeof(array) / sizeof(*array))

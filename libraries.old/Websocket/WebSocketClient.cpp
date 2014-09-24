@@ -324,7 +324,7 @@ void WebSocketClient::sendEncodedData(String str, uint8_t opcode) {
     int size = str.length() + 1;
     char cstr[size];
     
-// 	Serial.print(F("sendEncodedData: "));
+// 	Serial.print("sendEncodedData: ");
 // 	Serial.println(str);
 	
     str.toCharArray(cstr, size);

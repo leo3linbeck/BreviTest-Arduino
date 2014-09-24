@@ -1,0 +1,37 @@
+#######################################
+# Syntax Coloring Map for Adafruit_TCS34725
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+Adafruit_TCS34725	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+setIntegrationTime	KEYWORD2
+getRawData	KEYWORD2
+calculateColorTemperature	KEYWORD2
+calculateLux	KEYWORD2
+setInterrupt	KEYWORD2
+clearInterrupt	KEYWORD2
+setIntLimits	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+TCS34725_INTEGRATIONTIME_2_4MS	LITERAL1
+TCS34725_INTEGRATIONTIME_24MS	LITERAL1
+TCS34725_INTEGRATIONTIME_50MS	LITERAL1
+TCS34725_INTEGRATIONTIME_101MS	LITERAL1
+TCS34725_INTEGRATIONTIME_154MS	LITERAL1
+TCS34725_INTEGRATIONTIME_700MS	LITERAL1
+TCS34725_GAIN_1X	LITERAL1
+TCS34725_GAIN_4X	LITERAL1
+TCS34725_GAIN_16X	LITERAL1
+TCS34725_GAIN_60X	LITERAL1

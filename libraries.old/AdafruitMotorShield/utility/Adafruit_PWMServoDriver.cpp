@@ -37,21 +37,16 @@ void Adafruit_PWMServoDriver::reset(void) {
  write8(PCA9685_MODE1, 0x0);
 }
 
-void Adafruit_PWMServoDriver::setPWMFreq(uint16_t freq) {
+void Adafruit_PWMServoDriver::setPWMFreq(float freq) {
   //Serial.print("Attempting to set freq ");
   //Serial.println(freq);
   
-  long prescaleval = 25000000;
+  float prescaleval = 25000000;
   prescaleval /= 4096;
-  uint16_t rem = prescaleval % freq;
   prescaleval /= freq;
   prescaleval -= 1;
 //  Serial.print("Estimated pre-scale: "); Serial.println(prescaleval);
-  uint8_t prescale = prescaleval;
-  if (rem > freq>>1) {
-  	prescale += 1;
-  }
-//  uint8_t prescale = floor(prescaleval + 0.5);
+  uint8_t prescale = floor(prescaleval + 0.5);
 //  Serial.print("Final pre-scale: "); Serial.println(prescale);  
   
   uint8_t oldmode = read8(PCA9685_MODE1);
