@@ -19,12 +19,12 @@ void sensor_setup() {
   controlSensor = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X, PIN_CONTROL_SDA, PIN_CONTROL_SCL);
   controlSensor.begin();
   controlSensor.startReading(useLED);
-  Serial.println(F("Sensors warming up. This takes about one minute..."));
-
-  delay(SENSOR_STARTUP_DELAY);
-
-  Serial.println(F("Warmup complete."));
-  Serial.println(F("TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X"));
+//  Serial.println(F("Sensors warming up. This takes about one minute..."));
+//
+//  delay(SENSOR_STARTUP_DELAY);
+//
+//  Serial.println(F("Warmup complete."));
+//  Serial.println(F("TCS34725_INTEGRATIONTIME_50MS, TCS34725_GAIN_1X"));
 }
 
 void test_sensors() {

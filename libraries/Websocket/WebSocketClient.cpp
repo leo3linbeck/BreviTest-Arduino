@@ -295,7 +295,7 @@ int WebSocketClient::timedRead() {
 void WebSocketClient::sendEncodedData(char *str, uint8_t opcode) {
     uint8_t mask[4];
     int size = strlen(str);
-    
+
     if (size > 125) {
     	Serial.println(F("String too long for sending through websocket"));
     }

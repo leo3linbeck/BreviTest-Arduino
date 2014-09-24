@@ -167,8 +167,8 @@ void loop() {
   }
 #endif
 
-  test_sensors();
-  while (true);
+//  test_sensors();
+//  while (true);
 }
 
 

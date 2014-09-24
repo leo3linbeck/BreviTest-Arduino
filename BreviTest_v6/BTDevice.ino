@@ -80,20 +80,30 @@ void solenoid_in() {
 }
 
 void run_brevitest() {
-//  Serial.println(F("Running BreviTest..."));
-  reset_x_stage();
-
-  bt_move_to_second_well();
-  for (int i = 0; i < NUMBER_OF_WELLS; i += 1) {
-    raster_well(7);
-    bt_move_to_next_well();
-  }
+  Serial.println(F("Running BreviTest..."));
   
-  raster_well(10);
+  reset_x_stage();
+  move_steps(3000, STEP_FORWARD, SINGLE);
+  delay(10000); // put in card
+  move_steps(2000, STEP_FORWARD, SINGLE);
+  raster_well(10); // sample well
+  bt_move_to_next_well(); 
+  raster_well(10); // buffer well
+  bt_move_to_next_well();   
+  raster_well(10); // cortisol-hrp well
+  bt_read_sensors();
+  bt_move_to_next_well();
+  raster_well(10); // buffer well
+  bt_move_to_next_well();
+  raster_well(14); // tmb substrate well
+  move_steps(1400, STEP_BACKWARD, SINGLE);
+  raster_well(14);
   bt_position_sensors();
   bt_read_sensors();
 
   bt_cleanup();
+  
+  Serial.println(F("BreviTest run complete."));
 }
 
 void bt_move_to_second_well() {
@@ -104,17 +114,19 @@ void bt_move_to_second_well() {
 void raster_well(int number_of_rasters) {
   for (int i = 0; i < number_of_rasters; i += 1) {
     move_steps(STEPS_PER_RASTER, STEP_FORWARD, SINGLE);
-    if (i < 2) {
+    if (i < 1) {
       delay(500);
       solenoid_in();
-      delay(1200);
+      delay(2200);
       solenoid_out();
     }
     else {
-      delay(250);
-      solenoid_in();
-      delay(700);
-      solenoid_out();
+      for (int k = 0; k < 4; k += 1) {
+        delay(250);
+        solenoid_in();
+        delay(700);
+        solenoid_out();
+      }
     }
   }
   delay(4000);
@@ -126,7 +138,7 @@ void bt_move_to_next_well() {
 
 void bt_position_sensors() {
 //  Serial.println(F("Moving sensors into position"));
-  move_steps(4800, STEP_BACKWARD, SINGLE);
+  move_steps(4400, STEP_BACKWARD, SINGLE);
 }
 
 void bt_read_sensors() {
