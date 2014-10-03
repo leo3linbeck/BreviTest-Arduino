@@ -48,7 +48,7 @@ http://tools.ietf.org/html/draft-hixie-thewebsocketprotocol-75
 #include "Arduino.h"
 #include <Stream.h>
 #include "String.h"
-#include "WiFiClient.h"
+#include <GSM.h>
 
 // CRLF characters to terminate lines/handshakes in headers.
 #define CRLF "\r\n"
@@ -90,7 +90,7 @@ public:
 
     // Handle connection requests to validate and process/refuse
     // connections.
-    bool handshake(WiFiClient *client);
+    bool handshake(GSMClient *client);
     
     // Get data off of the stream
     bool getData(String& data, uint8_t *opcode = NULL);
@@ -104,7 +104,7 @@ public:
     char *protocol;
 
 private:
-    WiFiClient *wifi_client;
+    GSMClient *gsm_client;
     unsigned long _startMillis;
 
     const char *socket_urlPrefix;

@@ -6,13 +6,13 @@
 #include "base64.h"
 
 
-bool WebSocketClient::handshake(WiFiClient *client) {
+bool WebSocketClient::handshake(GSMClient *client) {
 	String data;
 	
-    wifi_client = client;
+    gsm_client = client;
 
     // If there is a connected client->
-    if (wifi_client->connected()) {
+    if (gsm_client->connected()) {
         // Check request and look for websocket handshake
 #ifdef DEBUGGING
             Serial.println(F("Client connected"));
@@ -25,7 +25,7 @@ bool WebSocketClient::handshake(WiFiClient *client) {
 
         }
         else {
-            // Might just need to break until out of wifi_client loop.
+            // Might just need to break until out of gsm_client loop.
 #ifdef DEBUGGING
             Serial.println(F("Invalid handshake"));
 #endif
@@ -64,34 +64,34 @@ bool WebSocketClient::analyzeRequest() {
     Serial.println(F("Sending websocket upgrade headers"));
 #endif    
 
-    wifi_client->print(F("GET "));
-    wifi_client->print(path);
-    wifi_client->print(F(" HTTP/1.1\r\n"));
-    wifi_client->print(F("Upgrade: websocket\r\n"));
-    wifi_client->print(F("Connection: Upgrade\r\n"));
-    wifi_client->print(F("Origin: Arduino\r\n"));
-    wifi_client->print(F("Host: "));
-    wifi_client->print(host);
-    wifi_client->print(CRLF); 
-    wifi_client->print(F("Sec-WebSocket-Key: "));
-    wifi_client->print(b64Key);
-    wifi_client->print(CRLF);
-//    wifi_client->print(F("Sec-WebSocket-Protocol: chat\r\n"));
-    wifi_client->print(F("Sec-WebSocket-Version: 13\r\n"));
-    wifi_client->print(CRLF);
+    gsm_client->print(F("GET "));
+    gsm_client->print(path);
+    gsm_client->print(F(" HTTP/1.1\r\n"));
+    gsm_client->print(F("Upgrade: websocket\r\n"));
+    gsm_client->print(F("Connection: Upgrade\r\n"));
+    gsm_client->print(F("Origin: Arduino\r\n"));
+    gsm_client->print(F("Host: "));
+    gsm_client->print(host);
+    gsm_client->print(CRLF); 
+    gsm_client->print(F("Sec-WebSocket-Key: "));
+    gsm_client->print(b64Key);
+    gsm_client->print(CRLF);
+//    gsm_client->print(F("Sec-WebSocket-Protocol: chat\r\n"));
+    gsm_client->print(F("Sec-WebSocket-Version: 13\r\n"));
+    gsm_client->print(CRLF);
 
 #ifdef DEBUGGING
     Serial.println(F("Analyzing response headers"));
 #endif    
 
-    while (wifi_client->connected() && !wifi_client->available()) {
+    while (gsm_client->connected() && !gsm_client->available()) {
         delay(300);
 //        Serial.println("Waiting...");
     }
 
     // TODO: More robust string extraction
     
-    while ((bite = wifi_client->read()) != -1) {
+    while ((bite = gsm_client->read()) != -1) {
 
         temp += (char)bite;
 
@@ -113,7 +113,7 @@ bool WebSocketClient::analyzeRequest() {
             temp = "";		
         }
 
-        if (!wifi_client->available()) {
+        if (!gsm_client->available()) {
           delay(20);
         }
     }
@@ -155,13 +155,13 @@ bool WebSocketClient::handleStream(String& data, uint8_t *opcode) {
     unsigned int i;
     bool hasMask = false;
 
-    if (!wifi_client->connected() || !wifi_client->available())
+    if (!gsm_client->connected() || !gsm_client->available())
     {
         return false;
     }      
 
     msgtype = timedRead();
-    if (!wifi_client->connected()) {
+    if (!gsm_client->connected()) {
         return false;
     }
 
@@ -173,7 +173,7 @@ bool WebSocketClient::handleStream(String& data, uint8_t *opcode) {
     }
 
 
-    if (!wifi_client->connected()) {
+    if (!gsm_client->connected()) {
         return false;
     }
 
@@ -181,12 +181,12 @@ bool WebSocketClient::handleStream(String& data, uint8_t *opcode) {
 
     if (length == WS_SIZE16) {
         length = timedRead() << 8;
-        if (!wifi_client->connected()) {
+        if (!gsm_client->connected()) {
             return false;
         }
             
         length |= timedRead();
-        if (!wifi_client->connected()) {
+        if (!gsm_client->connected()) {
             return false;
         }   
 
@@ -200,23 +200,23 @@ bool WebSocketClient::handleStream(String& data, uint8_t *opcode) {
     if (hasMask) {
         // get the mask
         mask[0] = timedRead();
-        if (!wifi_client->connected()) {
+        if (!gsm_client->connected()) {
             return false;
         }
 
         mask[1] = timedRead();
-        if (!wifi_client->connected()) {
+        if (!gsm_client->connected()) {
 
             return false;
         }
 
         mask[2] = timedRead();
-        if (!wifi_client->connected()) {
+        if (!gsm_client->connected()) {
             return false;
         }
 
         mask[3] = timedRead();
-        if (!wifi_client->connected()) {
+        if (!gsm_client->connected()) {
             return false;
         }
     }
@@ -231,14 +231,14 @@ bool WebSocketClient::handleStream(String& data, uint8_t *opcode) {
     if (hasMask) {
         for (i=0; i<length; ++i) {
             data += (char) (timedRead() ^ mask[i % 4]);
-            if (!wifi_client->connected()) {
+            if (!gsm_client->connected()) {
                 return false;
             }
         }
     } else {
         for (i=0; i<length; ++i) {
             data += (char) timedRead();
-            if (!wifi_client->connected()) {
+            if (!gsm_client->connected()) {
                 return false;
             }
         }            
@@ -252,12 +252,12 @@ void WebSocketClient::disconnectStream() {
     Serial.println(F("Terminating socket"));
 #endif
     // Should send 0x8700 to server to tell it I'm quitting here.
-    wifi_client->write((uint8_t) 0x87);
-    wifi_client->write((uint8_t) 0x00);
+    gsm_client->write((uint8_t) 0x87);
+    gsm_client->write((uint8_t) 0x00);
     
-    wifi_client->flush();
+    gsm_client->flush();
     delay(10);
-    wifi_client->stop();
+    gsm_client->stop();
 }
 
 bool WebSocketClient::getData(String& data, uint8_t *opcode) {
@@ -269,7 +269,7 @@ void WebSocketClient::sendData(const char *str, uint8_t opcode) {
     Serial.print(F("Sending data: "));
     Serial.println(str);
 #endif
-    if (wifi_client->connected()) {
+    if (gsm_client->connected()) {
         sendEncodedData(str, opcode);       
     }
 }
@@ -279,17 +279,17 @@ void WebSocketClient::sendData(String str, uint8_t opcode) {
     Serial.print(F("Sending data: "));
     Serial.println(str);
 #endif
-    if (wifi_client->connected()) {
+    if (gsm_client->connected()) {
         sendEncodedData(str, opcode);
     }
 }
 
 int WebSocketClient::timedRead() {
-  while (!wifi_client->available()) {
+  while (!gsm_client->available()) {
     delay(20);  
   }
 
-  return wifi_client->read();
+  return gsm_client->read();
 }
 
 void WebSocketClient::sendEncodedData(char *str, uint8_t opcode) {
@@ -301,21 +301,21 @@ void WebSocketClient::sendEncodedData(char *str, uint8_t opcode) {
     }
     else {
 		// Opcode; final fragment
-		wifi_client->write(opcode | WS_FIN);
-		wifi_client->write(((uint8_t) size) | WS_MASK);
+		gsm_client->write(opcode | WS_FIN);
+		gsm_client->write(((uint8_t) size) | WS_MASK);
 
 		mask[0] = random(0, 256);
 		mask[1] = random(0, 256);
 		mask[2] = random(0, 256);
 		mask[3] = random(0, 256);
 	
-		wifi_client->write(mask[0]);
-		wifi_client->write(mask[1]);
-		wifi_client->write(mask[2]);
-		wifi_client->write(mask[3]);
+		gsm_client->write(mask[0]);
+		gsm_client->write(mask[1]);
+		gsm_client->write(mask[2]);
+		gsm_client->write(mask[3]);
 	 
 		for (int i=0; i<size; ++i) {
-			wifi_client->write(str[i] ^ mask[i % 4]);
+			gsm_client->write(str[i] ^ mask[i % 4]);
 		}
     }
 }

@@ -1,11 +1,10 @@
 //#define DEBUGGING
-#define WIFI_ON
+#define GSM_ON
 
 #include <EEPROM.h>
 
 #include <Wire.h>
-#include <WiFi.h>
-#include <WiFiClient.h>
+#include <GSM.h>
 
 #include <Base64.h>
 #include <global.h>
@@ -26,22 +25,26 @@ Adafruit_TCS34725 controlSensor;
 char serial_number[20];
 unsigned long start_time;
 
-#ifdef WIFI_ON
-    WiFiClient wifiClient;
-//    char ssid[] = "AlphaDev Wifi 2";     //  Fannin network ID
-//    char pass[] = "alpha123";    // Fannin network password
-    char ssid[] = "Linbeck Home";     //  L3 network ID
-    char pass[] = "2january88";    // L3 network password
-    int wifi_status = WL_IDLE_STATUS;     // the Wifi radio's status
+#ifdef GSM_ON
+    // include the GSM library
+    
+    // PIN number if necessary
+    #define PINNUMBER ""
+    
+    // APN information obrained from your network provider
+    #define GPRS_APN       "bluevia.movistar.es" // replace with your GPRS APN
+    #define GPRS_LOGIN     ""    // replace with your GPRS login
+    #define GPRS_PASSWORD  "" // replace with your GPRS password
+    
+    // initialize the library instances
+    GSMClient gsmClient;
+    GPRS gprs;
+    GSM gsmAccess;
     
     WebSocketClient websocketClient;
-    char websocketURL[] = "172.16.121.117";
-//    char websocketURL[] = "172.16.28.88";
-    int websocketPort = 8081;
+    char websocketURL[] = "54.185.178.161";
+    int websocketPort = 80;
     char websocketPath[] = "/brevitest";
-    //char websocketURL[] = "echo.websocket.org";
-    //int websocketPort = 80;
-    //char websocketPath[] = "/";
     char msgDeviceINIT[] = "INIT:DEVICE:0000-0000-0000-0000";
     
     #define PING_INTERVAL 30000UL
@@ -50,8 +53,8 @@ unsigned long start_time;
     #define MAX_QUEUE_SIZE 10
     String message_queue[MAX_QUEUE_SIZE];
     int message_queue_length = 0;
-    extern bool wifi_setup();
-    extern void wifi_loop();
+    extern bool gsm_setup();
+    extern void gsm_loop();
 #endif
 
 extern void device_setup();
@@ -66,7 +69,7 @@ extern void move_steps();
 void read_serial_number() {
   for (int i = 0; i < 19; i += 1) {
     serial_number[i] = EEPROM.read(i);
-#ifdef WIFI_ON
+#ifdef GSM_ON
     msgDeviceINIT[12+i] = serial_number[i];
 #endif
   }
@@ -86,8 +89,8 @@ void setup() {
   device_setup();
   sensor_setup();
  
-#ifdef WIFI_ON
-    if (wifi_setup()) {
+#ifdef GSM_ON
+    if (gsm_setup()) {
       Serial.println(F("Sending device INIT message"));
       websocketClient.sendData(msgDeviceINIT);
       start_time = millis();
@@ -99,7 +102,7 @@ void setup() {
 #endif
 }
 
-#ifdef WIFI_ON
+#ifdef GSM_ON
   void process_message() {
     String msg, cmd, param;
     int i, colon;
@@ -160,16 +163,15 @@ void setup() {
 #endif
 
 void loop() {
-#ifdef WIFI_ON
-  wifi_loop();
+#ifdef GSM_ON
+  gsm_loop();
   
   while (message_queue_length > 0) {
     process_message();
   }
+#else
+  while (true);
 #endif
-
-//  test_sensors();
-//  while (true);
 }
 
 
